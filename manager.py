@@ -42,8 +42,8 @@ class Manager:
         self.filename = code_file.split('/')[-1].split('.')[0]
         self.name = name or self.filename
         self.version = version
-        self.logs_dir = os.path.join(self.base_dir, 'logs', self.name, self.version)
-        self.models_dir = os.path.join(self.base_dir, 'models', self.name, self.version)
+        self.logs_dir = os.path.join(self.base_dir, 'logs', self.version, self.name)
+        self.models_dir = os.path.join(self.base_dir, 'models', self.version, self.name)
         self.env = env
         os.makedirs(self.logs_dir, exist_ok=True)
         os.makedirs(self.models_dir, exist_ok=True)
@@ -52,7 +52,7 @@ class Manager:
 
     def run_model(self, model: BaseAlgorithm, train: bool = args.train):
         """运行一个强化学习模型"""
-        model_path = os.path.join(self.models_dir, self.filename)
+        model_path = os.path.join(self.models_dir, self.name)
         os.makedirs(self.models_dir, exist_ok=True)
         model.tensorboard_log = self.logs_dir
         train = train or args.train
@@ -86,7 +86,7 @@ class Manager:
         truncated_list = []
         terminated_count = 0
 
-        board = pybts.Board(tree=policy.tree, log_dir=os.path.join(self.logs_dir, f'{self.filename}'))
+        board = pybts.Board(tree=policy.tree, log_dir=self.logs_dir)
         if track:
             board.clear()
 
@@ -97,7 +97,7 @@ class Manager:
                 board.clear()
             env.reset(seed=gen_seed())
             obs, accum_reward, terminated, truncated, info = None, 0, False, False, None
-            with tqdm(total=10000, desc=f'[{episode}, train={train}]') as pbar:
+            with tqdm(total=10000, desc=f'[{self.name} {episode}, train={train}]') as pbar:
                 while not env.done:
                     policy.tree.context['step'] = pbar.n
                     policy.take_action()
@@ -135,7 +135,7 @@ class Manager:
             reward_list.append(accum_reward)
             step_count_list.append(pbar.n)
 
-        with open(os.path.join(self.logs_dir, f'{self.filename}.json'), 'w') as f:
+        with open(os.path.join(self.logs_dir, 'result.json', 'w')) as f:
             json.dump({
                 'rewards'       : sum(reward_list),
                 'average_reward': sum(reward_list) / len(reward_list),
@@ -169,7 +169,7 @@ class Manager:
                         break
             rewards.append(step_reward)
             steps.append(step)
-        with open(os.path.join(self.logs_dir, f'{self.filename}.json'), 'w') as f:
+        with open(os.path.join(self.logs_dir, f'result.json'), 'w') as f:
             json.dump({
                 'rewards'       : sum(rewards),
                 'average_reward': sum(rewards) / len(rewards),

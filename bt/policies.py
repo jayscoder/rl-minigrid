@@ -40,7 +40,6 @@ class BTPolicy:
                     self.env.put_action(action)
 
     def terminate(self):
-        print('Terminate')
         # 在最后结束的时候强制让每个强化学习节点观测，方便收集经验
         for node in self.tree.root.iterate():
             if isinstance(node, RLNode):

@@ -223,7 +223,6 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
         # self.rl_model.logger.record("missile_evade_success_count", self.agent.missile_evade_success_count)
         # self.rl_model.logger.record("aircraft_collided_count", self.agent.aircraft_collided_count)
 
-        print('episode', self.env.episode)
         if self.env.episode > 0 and self.save_interval > 0 and self.env.episode % self.save_interval == 0 and self.save_path != '':
             save_path = self.converter.render(self.save_path)
             self.rl_model.save(path=save_path)
@@ -326,9 +325,9 @@ class RLSwitcher(RLComposite, Switcher):
     def tick(self) -> typing.Iterator[Behaviour]:
         if self.exp_fill and self.train and self.status in self.tick_again_status():
             yield from self.switch_tick(index=self.gen_index(), tick_again_status=self.tick_again_status())
+            self.rl_action = self.current_index  # 保存动作
         else:
             yield from Switcher.tick(self)
-        self.rl_action = self.current_index  # 保存动作
 
 
 class RLSelector(RLComposite, Selector):
@@ -339,14 +338,15 @@ class RLSelector(RLComposite, Selector):
     def tick(self) -> typing.Iterator[Behaviour]:
         if self.exp_fill and self.train and self.status in self.tick_again_status():
             # 经验填充
+            last_index = self.current_index
             yield from self.seq_sel_tick(
                     tick_again_status=self.tick_again_status(),
                     continue_status=[Status.FAILURE, Status.INVALID],
                     no_child_status=Status.FAILURE,
                     start_index=self.gen_index())
+            self.rl_action = last_index  # 使用之前的动作
         else:
             yield from Selector.tick(self)
-        self.rl_action = self.current_index  # 保存动作
 
 
 class RLSequence(RLComposite, Sequence):
@@ -357,14 +357,15 @@ class RLSequence(RLComposite, Sequence):
     def tick(self) -> typing.Iterator[Behaviour]:
         if self.exp_fill and self.train and self.status in self.tick_again_status():
             # 经验填充
+            last_index = self.current_index
             yield from self.seq_sel_tick(
                     tick_again_status=self.tick_again_status(),
                     continue_status=[Status.SUCCESS],
                     no_child_status=Status.SUCCESS,
                     start_index=self.gen_index())
+            self.rl_action = last_index  # 保存动作
         else:
             yield from Sequence.tick(self)
-        self.rl_action = self.current_index  # 保存动作
 
 
 class RLCondition(RLNode, pybts.Condition):

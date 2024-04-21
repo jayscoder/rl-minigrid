@@ -1,12 +1,12 @@
 <Root>
 
-    <OneShot>
-        <Sequence>
-            <IsDoorOpen/>
-            <!--开门的奖励-->
-            <Reward domain="open_door" reward="0.1"/>
-        </Sequence>
-    </OneShot>
+<!--    <OneShot>-->
+<!--        <Sequence>-->
+<!--            <IsDoorOpen/>-->
+<!--            &lt;!&ndash;开门的奖励&ndash;&gt;-->
+<!--            <Reward domain="open_door" reward="0.1"/>-->
+<!--        </Sequence>-->
+<!--    </OneShot>-->
 
     <RLSwitcher
             algo="SAC"
@@ -21,16 +21,11 @@
             exp_fill="true"
             train="{{train}}">
 
-        <TurnLeft/>
-        <TurnRight/>
-        <MoveForward/>
-        <Pickup/>
-        <Drop/>
-        <Toggle/>
-
+        <ExploreUnseen name="探索"/>
         <ApproachKey name="接近钥匙"/>
         <PickUpKey name="拿钥匙"/>
-        <!--        <OpenDoor name="打开门"/>-->
         <ApproachDoor name="接近门"/>
+        <OpenDoor name="打开门"/>
+        <MoveToGoal name="移动到终点"/>
     </RLSwitcher>
 </Root>
