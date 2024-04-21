@@ -116,6 +116,16 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
 
         self.setup_model(algo=self.algo, **args)
 
+    def reset(self):
+        if self.env.episode > 0 and self.save_interval > 0 and self.env.episode % self.save_interval == 0 and self.save_path != '':
+            save_path = self.converter.render(self.save_path)
+            self.rl_model.save(path=save_path)
+
+        super().reset()
+        RLBaseNode.reset(self)
+        self.action_start_children_debug_info = [child.debug_info.copy() for child in self.children]
+        self.action_start_debug_info = self.debug_info.copy()  # 缓存debug数据，方便做差值
+
     def setup_model(self, algo: str, policy: str = 'MlpPolicy', **kwargs):
         tensorboard_logger = TensorboardLogger(folder=self.tensorboard_log, verbose=0)
 
@@ -203,7 +213,7 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
             'image'                : self.env.gen_obs(),
             'children_status_count': children_status_count,
             'status_count'         : [self.debug_info['success_count'] - self.action_start_debug_info['success_count'],
-                                      self.debug_info['failure_count'] - self.action_start_debug_info['success_count']]
+                                      self.debug_info['failure_count'] - self.action_start_debug_info['failure_count']]
         }
 
     def rl_gen_info(self) -> dict:
@@ -223,28 +233,6 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
 
     def rl_device(self) -> str:
         return self.env.options.device
-
-    def reset(self):
-        # self.rl_model.logger.record("final_reward", self.rl_reward)
-        # self.rl_model.logger.record("return", self.rl_accum_reward)
-
-        # self.rl_model.logger.record("win", self.env.game_info[self.agent.color]['win'])
-        # self.rl_model.logger.record("lose", self.env.game_info[self.agent.color]['lose'])
-        # self.rl_model.logger.record("draws", self.env.game_info['draws'])
-        # self.rl_model.logger.record("destroyed_count", self.agent.destroyed_count)
-        # self.rl_model.logger.record("missile_hit_enemy_count", self.agent.missile_hit_enemy_count)
-        # self.rl_model.logger.record("missile_miss_count", self.agent.missile_miss_count),
-        # self.rl_model.logger.record("missile_hit_self_count", self.agent.missile_hit_self_count),
-        # self.rl_model.logger.record("missile_fired_count", self.agent.missile_fired_count),
-        # self.rl_model.logger.record("missile_evade_success_count", self.agent.missile_evade_success_count)
-        # self.rl_model.logger.record("aircraft_collided_count", self.agent.aircraft_collided_count)
-
-        if self.env.episode > 0 and self.save_interval > 0 and self.env.episode % self.save_interval == 0 and self.save_path != '':
-            save_path = self.converter.render(self.save_path)
-            self.rl_model.save(path=save_path)
-
-        super().reset()
-        RLBaseNode.reset(self)
 
     def observe(self):
         if self.exp_fill and self.train:

@@ -144,6 +144,7 @@ class Manager:
 
             self.logger.record('accum_reward', accum_reward)
             self.logger.record('step_count', pbar.n)
+            self.log_record_tree_status_count(policy)
             # 过去N轮的平均
             self.logger.record_mean_last_n_episodes('accum_reward', to_key='accum_reward_20_avg', n=20)
             self.logger.record_mean_last_n_episodes('step_count', to_key='step_count_20_avg', n=20)
@@ -195,3 +196,22 @@ class Manager:
                 'terminated'    : sum(terminated_list),
                 'truncated'     : sum(truncated_list)
             }, f, ensure_ascii=False, indent=4)
+
+    def log_record_tree_status_count(self, policy: BTPolicy):
+        """记录树节点的状态"""
+        for node in policy.tree.root.iterate():
+            if isinstance(node, RLNode):
+                for k in ['success_count', 'failure_count', 'running_count', 'invalid_count', 'tick_count']:
+                    self.logger.record(f'{node.name}/{k}', node.debug_info[k])
+                    self.logger.record_mean_last_n_episodes(
+                            f'{node.name}/{k}',
+                            f'{node.name}/{k}_20_avg', n=20)
+                if node.debug_info['success_count'] > 0:
+                    success_rate = node.debug_info['success_count'] / (
+                            node.debug_info['success_count'] + node.debug_info['failure_count'])
+                else:
+                    success_rate = 0
+                # 记录节点成功率
+                self.logger.record(f'{node.name}/success_rate', success_rate)
+                self.logger.record_mean_last_n_episodes(f'{node.name}/success_rate', f'{node.name}/success_rate_20_avg',
+                                                        n=20)

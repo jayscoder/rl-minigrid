@@ -50,28 +50,29 @@ class TwoDoorKeyEnv(RandomGoalDoorKeyEnv):
 
         # Create a vertical splitting wall
         while True:
-            splitIdxs = [self._rand_int(1, width - 2), self._rand_int(1, width - 2)]
+            splitIdxs = [self._rand_int(2, width - 2), self._rand_int(2, width - 2)]
             if abs(splitIdxs[0] - splitIdxs[1]) > 3:
                 break
         colors = ['red', 'yellow']
         random.shuffle(colors)
 
         self.place_agent(size=(splitIdxs[0], height))
+
         for i, splitIdx in enumerate(splitIdxs):
             self.grid.vert_wall(splitIdx, 0)
             # Place the agent at a random position and orientation
             # on the left side of the splitting wall
 
             # Place a door in the wall
-            doorIdx = self._rand_int(1, width - 2)
+            doorIdx = self._rand_int(1, height - 2)
             self.put_obj(Door(colors[i], is_locked=True), splitIdx, doorIdx)
 
             # Place a yellow key on the left side
             self.place_obj(obj=Key(colors[i]), top=(0, 0), size=(splitIdx, height))
 
         # Place a goal in the random position
-        self.place_obj(obj=Goal(), top=(splitIdxs[1], 0), size=(width - splitIdxs[1] - 1, height))
-
+        self.place_obj(obj=Goal(), top=(splitIdxs[1], 0), size=(width - splitIdxs[1], height))
+        
         self.mission = "use the key to open the door and then get to the goal"
 
 
