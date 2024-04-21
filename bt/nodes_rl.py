@@ -24,24 +24,27 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
     """
 
     def __init__(self,
-                 path: str = '',
-                 algo: str = 'PPO',
-                 domain: str = '',
-                 save_path: str = '',  # 空代表不保存
-                 save_interval: int | str = 0,
-                 tensorboard_log: str = '',
                  **kwargs
                  ):
         super().__init__(**kwargs)
         RLBaseNode.__init__(self)
-        self.algo = algo
-        self.domain = domain  # 如果scope设置成default或其他不为空的值，则认为奖励要从context.rl_reward[scope]中拿
-        self.path = path
-        self.save_path = save_path
-        self.save_interval = save_interval
-        self.tensorboard_log = tensorboard_log
 
     ### 参数列表 ###
+    @property
+    def algo(self) -> str:
+        """强化学习算法"""
+        return self.converter.str(self.attrs['algo'])
+
+    @property
+    def domain(self) -> str:
+        # 如果scope设置成default或其他不为空的值，则认为奖励要从context.rl_reward[scope]中拿
+        return self.converter.str(self.attrs.get('domain', 'default'))
+
+    @property
+    def path(self) -> str:
+        """是否开启经验填充"""
+        return self.converter.str(self.attrs.get('path'))
+
     @property
     def exp_fill(self) -> bool:
         """是否开启经验填充"""
@@ -55,6 +58,18 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
     def deterministic(self) -> bool:
         return self.converter.bool(self.attrs.get('deterministic', False))
 
+    @property
+    def save_interval(self) -> int:
+        return self.converter.int(self.attrs.get('save_interval', 50))
+
+    @property
+    def save_path(self) -> str:
+        return self.converter.str(self.attrs.get('save_path', ''))
+
+    @property
+    def tensorboard_log(self) -> str:
+        return self.converter.str(self.attrs.get('tensorboard_log', ''))
+
     def to_data(self):
         return {
             **super().to_data(),
@@ -63,8 +78,8 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
             'path'         : self.path,
             'domain'       : self.domain,
             'save_interval': self.save_interval,
+            'save_path'    : self.save_path,
             'train'        : self.train,
-
         }
 
     def rl_model_args(self) -> dict:
@@ -94,15 +109,6 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
 
     def setup(self, **kwargs: typing.Any) -> None:
         super().setup(**kwargs)
-
-        self.path = self.converter.render(
-                value=self.path,
-        )
-        self.domain = self.converter.render(self.domain)
-        self.save_interval = self.converter.int(self.save_interval)
-        self.algo = self.converter.render(self.algo).upper()
-        if self.tensorboard_log != '':
-            self.tensorboard_log = self.converter.render(self.tensorboard_log)
 
         args = self.rl_model_args()
         for key in ['batch_size', 'n_steps', 'learning_starts', 'verbose']:
@@ -217,6 +223,7 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
         # self.rl_model.logger.record("missile_evade_success_count", self.agent.missile_evade_success_count)
         # self.rl_model.logger.record("aircraft_collided_count", self.agent.aircraft_collided_count)
 
+        print('episode', self.env.episode)
         if self.env.episode > 0 and self.save_interval > 0 and self.env.episode % self.save_interval == 0 and self.save_path != '':
             save_path = self.converter.render(self.save_path)
             self.rl_model.save(path=save_path)

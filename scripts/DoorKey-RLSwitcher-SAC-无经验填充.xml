@@ -14,7 +14,7 @@
             domain="default,open_door"
             path="{{models_dir}}/{{name}}"
             save_path="{{models_dir}}/{{name}}"
-            save_interval="50"
+            save_interval="20"
             tensorboard_log="{{logs_dir}}/{{name}}"
             log_interval="1"
             verbose="0"

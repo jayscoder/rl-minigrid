@@ -49,6 +49,8 @@ class MiniGridSimulation(gym.Wrapper):
         self.reset()
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
+        if len(self.exp_buffers) > 1:
+            self.episode += 1
         self.gif_frames = []
         self.seed = seed
         self.done = False

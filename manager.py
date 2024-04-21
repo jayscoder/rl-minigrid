@@ -65,15 +65,14 @@ class Manager:
     def run_policy(self, policy: BTPolicy, train: bool = False, track: bool = False, episodes: int = 100):
         """运行一个行为树策略"""
         train = train or args.train
-        models_dir = os.path.join(self.base_dir, 'models', self.filename)
-        os.makedirs(models_dir, exist_ok=True)
         policy.tree.context.update({
-            'models_dir': models_dir,
+            'models_dir': self.models_dir,
             'logs_dir'  : self.logs_dir,
             'train'     : train,
             'base_dir'  : self.base_dir,
             'filename'  : self.filename,
-            'debug'     : self.debug
+            'debug'     : self.debug,
+            'version'   : self.version
         })
         policy.tree.setup()
         policy.reset()

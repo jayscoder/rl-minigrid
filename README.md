@@ -24,6 +24,18 @@ python run_rlbt.py --train --render --track
 python render_all_bt.py
 ```
 
+## 日志
+
+开启tensorboard日志
+```shell
+tensorboard --logdir=logs
+```
+
+开启pybts日志
+```shell
+pybts --dir=logs
+```
+
 ## 强化学习节点
 
 - RLSwitcher
