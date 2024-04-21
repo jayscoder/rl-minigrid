@@ -1,0 +1,65 @@
+<Root name="SAC-1">
+    <!--    <OneShot policy="SUCCESS">-->
+    <!--        <Sequence>-->
+    <!--            <IsKeyFound/>-->
+    <!--            <Reward scope="default" reward="1"/>-->
+    <!--        </Sequence>-->
+    <!--    </OneShot>-->
+
+    <!--    <OneShot policy="SUCCESS">-->
+    <!--        <Sequence>-->
+    <!--            <IsGoalFound/>-->
+    <!--            <Reward scope="default" reward="1"/>-->
+    <!--        </Sequence>-->
+    <!--    </OneShot>-->
+
+    <!--    <OneShot policy="SUCCESS">-->
+    <!--        <Sequence>-->
+    <!--            <IsDoorFound/>-->
+    <!--            <Reward scope="default" reward="1"/>-->
+    <!--        </Sequence>-->
+    <!--    </OneShot>-->
+
+    <!--    <OneShot policy="SUCCESS">-->
+    <!--        <Sequence>-->
+    <!--            <IsKeyFound/>-->
+    <!--            <Reward scope="default" reward="1"/>-->
+    <!--        </Sequence>-->
+    <!--    </OneShot>-->
+
+    <OneShot policy="SUCCESS">
+        <Sequence>
+            <IsDoorOpen/>
+            <Reward scope="default" reward="1"/>
+        </Sequence>
+    </OneShot>
+
+    <OneShot policy="SUCCESS">
+        <Sequence>
+            <IsKeyHeld/>
+            <Reward scope="default" reward="1"/>
+        </Sequence>
+    </OneShot>
+
+    <OneShot policy="SUCCESS">
+        <Sequence>
+            <IsReachGoal/>
+            <Reward scope="default" reward="10"/>
+        </Sequence>
+    </OneShot>
+
+    <!--步长惩罚-->
+    <Reward scope="default" reward="-0.001"/>
+
+    <RLAction
+            algo="SAC"
+            name="SAC-3-RLAction"
+            reward_scope="default"
+            path="{{models_dir}}/{{name}}"
+            save_path="{{models_dir}}/{{name}}"
+            save_interval="50"
+            tensorboard_log="{{logs_dir}}/{{name}}"
+            log_interval="1"
+            verbose="0"
+            train="{{train}}"/>
+</Root>

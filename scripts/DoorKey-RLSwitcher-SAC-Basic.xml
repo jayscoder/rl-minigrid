@@ -1,0 +1,20 @@
+<RLSwitcher
+        algo="SAC"
+        name="RLSwitcher"
+        domain="default"
+        path="{{models_dir}}/{{name}}"
+        save_path="{{models_dir}}/{{name}}"
+        save_interval="50"
+        tensorboard_log="{{logs_dir}}/{{name}}"
+        log_interval="1"
+        verbose="0"
+        train="{{train}}">
+
+    <TurnLeft/>
+    <TurnRight/>
+    <MoveForward/>
+    <Pickup/>
+    <Drop/>
+    <Toggle/>
+
+</RLSwitcher>

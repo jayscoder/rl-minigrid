@@ -1,0 +1,8 @@
+<Sequence>
+    <ExploreUnseen name="探索"/>
+    <ApproachKey name="接近钥匙"/>
+    <PickUpKey name="拿钥匙"/>
+    <ApproachDoor name="接近门"/>
+    <OpenDoor name="打开门"/>
+    <MoveToGoal name="移动到终点"/>
+</Sequence>

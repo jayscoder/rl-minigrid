@@ -1,0 +1,12 @@
+<Root name="SAC-1">
+    <RLAction
+            algo="SAC"
+            name="SAC-1-RLAction"
+            path="{{models_dir}}/{{name}}"
+            tensorboard_log="{{logs_dir}}/{{name}}"
+            log_interval="1"
+            save_path="{{models_dir}}/{{name}}"
+            save_interval="50"
+            verbose="0"
+            train="{{train}}"/>
+</Root>

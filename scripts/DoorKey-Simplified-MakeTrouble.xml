@@ -1,0 +1,4 @@
+<Selector>
+    <include path="scripts/DoorKey-MakeTrouble.xml"/>
+    <include path="scripts/DoorKey-Simplified.xml"/>
+</Selector>

@@ -1,0 +1,49 @@
+<Root name="SAC-1">
+    <Selector>
+        <Sequence>
+            <ApproachKey/>
+            <PickUpKey/>
+            <ApproachDoor/>
+            <OpenDoor/>
+            <MoveToGoal/>
+        </Sequence>
+        <ExploreUnseen/>
+    </Selector>
+
+    <RLSelector
+            algo="SAC"
+            name="SAC-1-RLAction"
+            reward_scope="default,attack"
+            path="{{models_dir}}/{{name}}"
+            save_path="{{models_dir}}/{{name}}"
+            save_interval="50"
+            tensorboard_log="{{logs_dir}}/{{name}}"
+            log_interval="1"
+            verbose="0"
+            train="{{train}}"
+    >
+        <ApproachKey/>
+        <OpenDoor/>
+        <MoveToGoal/>
+        <ExploreUnseen/>
+        <RLAction
+                algo="SAC"
+                name="SAC-1-RLAction"
+                reward_scope="default,attack"
+                path="{{models_dir}}/{{name}}"
+                tensorboard_log="{{logs_dir}}/{{filename}}/{{name}}"
+                log_interval="1"
+                verbose="0"
+                train="{{train}}"/>
+    </RLSelector>
+
+    <!--    <RLAction-->
+    <!--            algo="SAC"-->
+    <!--            name="SAC-1-RLAction"-->
+    <!--            reward_scope="default,attack"-->
+    <!--            path="{{models_dir}}/{{name}}"-->
+    <!--            tensorboard_log="{{logs_dir}}/{{filename}}/{{name}}"-->
+    <!--            log_interval="1"-->
+    <!--            verbose="0"-->
+    <!--            train="{{train}}"/>-->
+</Root>

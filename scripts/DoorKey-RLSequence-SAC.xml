@@ -1,0 +1,19 @@
+<RLSequence
+        algo="SAC"
+        name="RLSequence"
+        domain="default"
+        path="{{models_dir}}/{{name}}"
+        save_path="{{models_dir}}/{{name}}"
+        save_interval="50"
+        tensorboard_log="{{logs_dir}}/{{name}}"
+        log_interval="1"
+        verbose="0"
+        train="{{train}}"
+>
+    <ExploreUnseen name="探索"/>
+    <ApproachKey name="接近钥匙"/>
+    <PickUpKey name="拿钥匙"/>
+    <ApproachDoor name="接近门"/>
+    <OpenDoor name="打开门"/>
+    <MoveToGoal name="移动到终点"/>
+</RLSequence>

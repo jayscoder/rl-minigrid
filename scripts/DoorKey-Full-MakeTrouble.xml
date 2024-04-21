@@ -1,0 +1,9 @@
+<Selector>
+    <Sequence>
+        <IsStatusChanged from_status="FAILURE" to_status="SUCCESS">
+            <IsDoorOpen/>
+        </IsStatusChanged>
+        <MakeTrouble name="其他任务"/>
+    </Sequence>
+    <include path="scripts/DoorKey-Full.xml"/>
+</Selector>
