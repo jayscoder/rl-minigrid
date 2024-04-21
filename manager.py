@@ -130,6 +130,9 @@ class Manager:
 
             self.logger.record('accum_reward', accum_reward)
             self.logger.record('step_count', pbar.n)
+            # 过去N轮的平均
+            self.logger.record_mean_last_n_episodes('accum_reward', to_key='accum_reward_20_avg', n=20)
+            self.logger.record_mean_last_n_episodes('step_count', to_key='step_count_20_avg', n=20)
             self.logger.dump(episode)
 
             reward_list.append(accum_reward)

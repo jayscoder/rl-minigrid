@@ -30,7 +30,7 @@ TREE = {
     '5': 'scripts/DoorKey-RLSwitcher-SAC-无经验填充.xml',
 }
 
-TREE_NO = '5'  # 采用的行为树的序号
+TREE_NO = '4'  # 采用的行为树的序号
 TREE_NAME = TREE[TREE_NO].split('/')[-1].split('.')[0]
 tree = RLTree(
         root=builder.build_from_file(TREE[TREE_NO]),

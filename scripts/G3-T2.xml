@@ -1,10 +1,10 @@
 <Root>
-
+    <!--测试RLSwitcher无RLAction靠自己学会开门-->
     <OneShot>
         <Sequence>
             <IsDoorOpen/>
             <!--开门的奖励-->
-            <Reward domain="open_door" reward="1"/>
+            <Reward domain="open_door" reward="0.5"/>
         </Sequence>
     </OneShot>
 
