@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import gym.spaces
-import numpy as np
-
 from bt.base import *
 from rl.nodes import Reward
 from stable_baselines3 import PPO, SAC, HerReplayBuffer, DQN, DDPG, TD3
@@ -72,6 +69,16 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
     @property
     def tensorboard_log(self) -> str:
         return self.converter.str(self.attrs.get('tensorboard_log', ''))
+
+    @property
+    def obs_status_count(self) -> bool:
+        """是否观测自己的状态数量"""
+        return self.converter.bool(self.attrs.get('obs_status_count', True))
+
+    @property
+    def obs_children_status_count(self) -> bool:
+        """是否观测自己孩子节点的状态数量"""
+        return self.converter.bool(self.attrs.get('obs_children_status_count', True))
 
     def to_data(self):
         return {
@@ -204,16 +211,23 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
         )
 
     def rl_gen_obs(self):
+        status_count = [0, 0]
+        if self.obs_status_count:
+            status_count = [self.debug_info['success_count'] - self.action_start_debug_info['success_count'],
+                            self.debug_info['failure_count'] - self.action_start_debug_info['failure_count']]
+
         children_status_count = []
         for i, child in enumerate(self.children):
             assert isinstance(child, Node)
             for k in ['success_count', 'failure_count']:
-                children_status_count.append(child.debug_info[k] - self.action_start_children_debug_info[i][k])
+                if self.obs_children_status_count:
+                    children_status_count.append(child.debug_info[k] - self.action_start_children_debug_info[i][k])
+                else:
+                    children_status_count.append(0)
         return {
             'image'                : self.env.gen_obs(),
             'children_status_count': children_status_count,
-            'status_count'         : [self.debug_info['success_count'] - self.action_start_debug_info['success_count'],
-                                      self.debug_info['failure_count'] - self.action_start_debug_info['failure_count']]
+            'status_count'         : status_count
         }
 
     def rl_gen_info(self) -> dict:

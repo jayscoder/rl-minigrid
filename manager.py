@@ -19,20 +19,16 @@ parser.add_argument('--track', action='store_true')  # 是否开启pybts监控
 parser.add_argument('--debug', action='store_true')  # 是否开启DEBUG模式，debug模式下会有更多的输出内容
 args = parser.parse_args()
 
-
 def gen_seed():
     # return 0
     return int(time.time())
-
 
 random.seed(gen_seed())
 np.random.seed(gen_seed())
 torch.manual_seed(gen_seed())
 
-
 def make_env(env_id, render: bool = False):
     return gym.make(env_id, render_mode='human' if (args.render or render) else 'rgb_array')
-
 
 def folder_run_id(folder: str):
     os.makedirs(folder, exist_ok=True)
@@ -55,7 +51,6 @@ class Manager:
         self.base_dir = os.path.dirname(code_file)
         self.filename = code_file.split('/')[-1].split('.')[0]
         self.name = name or self.filename
-        self.version = version
         self.run_id = str(folder_run_id(os.path.join(self.base_dir, 'logs', self.name)))
         self.logs_dir = os.path.join(self.base_dir, 'logs', self.name, self.run_id)
         self.models_dir = os.path.join(self.base_dir, 'models', self.name, self.run_id)
@@ -111,7 +106,7 @@ class Manager:
                 board.clear()
             env.reset(seed=gen_seed())
             obs, accum_reward, terminated, truncated, info = None, 0, False, False, None
-            with tqdm(total=10000, desc=f'[{self.name} {episode}, train={train}]') as pbar:
+            with tqdm(total=10000, desc=f'[{self.name}/{self.run_id} episode={episode}, train={train}]') as pbar:
                 while not env.done:
                     policy.tree.context['step'] = pbar.n
                     policy.take_action()

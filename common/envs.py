@@ -10,6 +10,7 @@ from minigrid.core.world_object import Door, Goal, Key
 from minigrid.minigrid_env import MiniGridEnv
 from gymnasium.envs.registration import register
 
+
 class RandomGoalDoorKeyEnv(DoorKeyEnv):
     def _gen_grid(self, width, height):
         # Create an empty grid
@@ -41,7 +42,7 @@ class RandomGoalDoorKeyEnv(DoorKeyEnv):
 
 
 class TwoDoorKeyEnv(RandomGoalDoorKeyEnv):
-    def _gen_grid(self, width, height):
+    def do_gen_grid(self, width, height):
         # Create an empty grid
         self.grid = Grid(width, height)
 
@@ -72,8 +73,16 @@ class TwoDoorKeyEnv(RandomGoalDoorKeyEnv):
 
         # Place a goal in the random position
         self.place_obj(obj=Goal(), top=(splitIdxs[1], 0), size=(width - splitIdxs[1], height))
-        
+
         self.mission = "use the key to open the door and then get to the goal"
+
+    def _gen_grid(self, width, height):
+        # Check that the agent doesn't overlap with an object
+        self.do_gen_grid(width, height)
+        start_cell = self.grid.get(*self.agent_pos)
+        while not (start_cell is None or start_cell.can_overlap()):
+            self.do_gen_grid(width, height)
+            start_cell = self.grid.get(*self.agent_pos)
 
 
 register(
