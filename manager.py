@@ -36,13 +36,14 @@ def make_env(env_id, render: bool = False):
 
 class Manager:
 
-    def __init__(self, code_file: str, env: gym.Env, version: str = 'v0', debug=args.debug):
+    def __init__(self, code_file: str, env: gym.Env, version: str = 'v0', debug=args.debug, name=''):
         self.code_file = code_file
         self.base_dir = os.path.dirname(code_file)
         self.filename = code_file.split('/')[-1].split('.')[0]
+        self.name = name or self.filename
         self.version = version
-        self.logs_dir = os.path.join(self.base_dir, 'logs', self.filename, self.version)
-        self.models_dir = os.path.join(self.base_dir, 'models', self.filename, self.version)
+        self.logs_dir = os.path.join(self.base_dir, 'logs', self.name, self.version)
+        self.models_dir = os.path.join(self.base_dir, 'models', self.name, self.version)
         self.env = env
         os.makedirs(self.logs_dir, exist_ok=True)
         os.makedirs(self.models_dir, exist_ok=True)
@@ -92,9 +93,12 @@ class Manager:
 
         for episode in range(episodes):
             policy.reset()
+            if episode % 10 == 0:
+                # 每隔10轮清理一下
+                board.clear()
             env.reset(seed=gen_seed())
             obs, accum_reward, terminated, truncated, info = None, 0, False, False, None
-            with tqdm(total=2600, desc=f'[{episode}, train={train}]') as pbar:
+            with tqdm(total=10000, desc=f'[{episode}, train={train}]') as pbar:
                 while not env.done:
                     policy.tree.context['step'] = pbar.n
                     policy.take_action()

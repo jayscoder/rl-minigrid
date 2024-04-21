@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pybts
-
 from bt.base import *
 from pybts import *
 from common.constants import *

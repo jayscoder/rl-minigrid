@@ -1,8 +1,6 @@
-import pybts
 from bt import *
 from manager import *
 from common import *
-import minigrid
 from rl import RLTree
 
 """
@@ -19,7 +17,7 @@ ENVS = {
     '3': "MiniGrid-DoorKey-16x16-v0",
 }
 
-env = make_env(ENVS['3'], render=False)
+env = make_env(ENVS['1'], render=False)
 env = MiniGridSimulation(env)
 
 builder = BTBuilder()
@@ -27,15 +25,21 @@ builder = BTBuilder()
 TREE = {
     '1': 'scripts/DoorKey-RLSequence-SAC.xml',
     '2': 'scripts/DoorKey-RLSequence-MakeTrouble-SAC.xml',
-    '3': 'scripts/DoorKey-RLSwitcher-SAC-Basic.xml'
+    '3': 'scripts/DoorKey-RLSwitcher-SAC-Basic.xml',
+    '4': 'scripts/DoorKey-RLSwitcher-SAC-经验填充.xml',
+    '5': 'scripts/DoorKey-RLSwitcher-SAC-无经验填充.xml',
 }
 
 tree = RLTree(
-        root=builder.build_from_file(TREE['3']),
+        root=builder.build_from_file(TREE['4']),
+        context={
+            # 这里放一些环境变量
+
+        }
 )
 
 policy = BTPolicy(env=env, tree=tree)
 
 if __name__ == '__main__':
-    manager = Manager(code_file=__file__, env=env, debug=True)
+    manager = Manager(code_file=__file__, env=env, debug=True, name='任务名称写在这里', version='v1') # 区分不同的版本
     manager.run_policy(policy=policy, track=True, train=False)

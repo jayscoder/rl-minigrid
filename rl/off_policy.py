@@ -87,8 +87,7 @@ class OffPolicyRLHandler(RLHandler):
         self.log_interval = log_interval
 
     def reset(self):
-        self.num_collected_steps = 0
-        self.num_collected_episodes = 0
+        pass
 
     def predict(self):
         # Switch to eval mode (this affects batch norm / dropout)
@@ -169,6 +168,7 @@ class OffPolicyRLHandler(RLHandler):
         return should_train
 
     def train(self):
+
         if self.model.num_timesteps > 0 and self.model.num_timesteps > self.model.learning_starts:
             # If no `gradient_steps` is specified,
             # do as many gradients steps as steps performed during the rollout
@@ -177,143 +177,143 @@ class OffPolicyRLHandler(RLHandler):
             if gradient_steps > 0:
                 self.model.train(batch_size=self.model.batch_size, gradient_steps=gradient_steps)
 
-        self.reset()
+        self.num_collected_steps = 0
+        self.num_collected_episodes = 0
+
+# def bt_off_policy_insert_reply_buffer(
+#         self: OffPolicyAlgorithm,
+#         replay_buffer: ReplayBuffer,
+#         action, new_obs, reward, done, info,
+#         log_interval: Optional[int] = None):
+#     """
+#     动作填充，将外部的一些经验填充进来
+#     基于动作重复的原理
+#     :return:
+#     """
+#     # 数据都从单个处理成批量的
+#     if isinstance(new_obs, dict):
+#         new_obs = new_obs.copy()
+#         for k in new_obs:
+#             new_obs[k] = np.expand_dims(new_obs[k], axis=0)
+#     else:
+#         new_obs = np.expand_dims(new_obs, axis=0)
+#     reward = np.array([reward])
+#     done = np.array([done])
+#     info = [info]
+#
+#     self.num_timesteps += 1
+#
+#     # Retrieve reward and episode length if using Monitor wrapper
+#     self._update_info_buffer(info, done)
+#
+#     unscaled_action = action  # 原始动作
+#     # 数值标准化 Rescale the action from [low, high] to [-1, 1]，方便强化学习模型进行训练
+#     if isinstance(self.action_space, spaces.Box):
+#         scaled_action = self.policy.scale_action(unscaled_action)
+#
+#         # We store the scaled action in the buffer
+#         buffer_action = scaled_action
+#     else:
+#         # Discrete case, no need to normalize or clip
+#         buffer_action = unscaled_action
+#
+#     # Store data in replay buffer (normalized action and unnormalized observation)
+#     self._store_transition(replay_buffer, buffer_action, new_obs, reward, done, info)  # type: ignore[arg-type]
+#
+#     self._update_current_progress_remaining(self.num_timesteps, self._total_timesteps)
+#
+#     # For DQN, check if the target network should be updated
+#     # and update the exploration schedule
+#     # For SAC/TD3, the update is dones as the same time as the gradient update
+#     # see https://github.com/hill-a/stable-baselines/issues/900
+#     self._on_step()
+#
+#     for idx, done in enumerate(done):
+#         if done:
+#             # Update stats
+#             self._episode_num += 1
+#
+#             # Log training infos
+#             if log_interval is not None and self._episode_num % log_interval == 0:
+#                 self._dump_logs()
 
 
-def bt_off_policy_insert_reply_buffer(
-        self: OffPolicyAlgorithm,
-        replay_buffer: ReplayBuffer,
-        action, new_obs, reward, done, info,
-        log_interval: Optional[int] = None):
-    """
-    动作填充，将外部的一些经验填充进来
-    基于动作重复的原理
-    :return:
-    """
-    # 数据都从单个处理成批量的
-    if isinstance(new_obs, dict):
-        new_obs = new_obs.copy()
-        for k in new_obs:
-            new_obs[k] = np.expand_dims(new_obs[k], axis=0)
-    else:
-        new_obs = np.expand_dims(new_obs, axis=0)
-    reward = np.array([reward])
-    done = np.array([done])
-    info = [info]
-
-    self.num_timesteps += 1
-
-    # Retrieve reward and episode length if using Monitor wrapper
-    self._update_info_buffer(info, done)
-
-    unscaled_action = action  # 原始动作
-    # 数值标准化 Rescale the action from [low, high] to [-1, 1]，方便强化学习模型进行训练
-    if isinstance(self.action_space, spaces.Box):
-        scaled_action = self.policy.scale_action(unscaled_action)
-
-        # We store the scaled action in the buffer
-        buffer_action = scaled_action
-    else:
-        # Discrete case, no need to normalize or clip
-        buffer_action = unscaled_action
-
-    # Store data in replay buffer (normalized action and unnormalized observation)
-    self._store_transition(replay_buffer, buffer_action, new_obs, reward, done, info)  # type: ignore[arg-type]
-
-    self._update_current_progress_remaining(self.num_timesteps, self._total_timesteps)
-
-    # For DQN, check if the target network should be updated
-    # and update the exploration schedule
-    # For SAC/TD3, the update is dones as the same time as the gradient update
-    # see https://github.com/hill-a/stable-baselines/issues/900
-    self._on_step()
-
-    for idx, done in enumerate(done):
-        if done:
-            # Update stats
-            self._episode_num += 1
-
-            # Log training infos
-            if log_interval is not None and self._episode_num % log_interval == 0:
-                self._dump_logs()
-
-
-def bt_off_policy_collect_rollouts(
-        self: OffPolicyAlgorithm,
-        train_freq: TrainFreq,
-        replay_buffer: ReplayBuffer,
-        action_noise: Optional[ActionNoise] = None,
-        learning_starts: int = 0,
-        log_interval: Optional[int] = None,
-) -> typing.Generator:
-    # Switch to eval mode (this affects batch norm / dropout)
-    self.policy.set_training_mode(False)
-
-    num_collected_steps, num_collected_episodes = 0, 0
-    env_num_envs = 1
-    assert train_freq.frequency > 0, "Should at least collect one step or episode."
-
-    if self.use_sde:
-        self.actor.reset_noise(env_num_envs)
-
-    continue_training = True
-
-    while should_collect_more_steps(train_freq, num_collected_steps, num_collected_episodes):
-        if self.use_sde and self.sde_sample_freq > 0 and num_collected_steps % self.sde_sample_freq == 0:
-            # Sample a new noise matrix
-            self.actor.reset_noise(env_num_envs)
-
-        # Select action randomly or according to policy
-        actions, buffer_actions = self._sample_action(learning_starts, action_noise, env_num_envs)
-
-        # Rescale and perform action
-        new_obs, rewards, dones, infos = yield actions[0]
-
-        # print('train_freq', train_freq, 'num_collected_steps', num_collected_steps, 'num_collected_episodes',
-        #       num_collected_episodes)
-
-        # 数据都从单个处理成批量的
-        if isinstance(new_obs, dict):
-            new_obs = new_obs.copy()
-            for k in new_obs:
-                new_obs[k] = np.expand_dims(new_obs[k], axis=0)
-        else:
-            new_obs = np.expand_dims(new_obs, axis=0)
-        rewards = np.array([rewards])
-        dones = np.array([dones])
-        infos = [infos]
-
-        self.num_timesteps += env_num_envs
-
-        num_collected_steps += 1
-
-        # Retrieve reward and episode length if using Monitor wrapper
-        self._update_info_buffer(infos, dones)
-
-        # Store data in replay buffer (normalized action and unnormalized observation)
-        self._store_transition(replay_buffer, buffer_actions, new_obs, rewards, dones, infos)  # type: ignore[arg-type]
-
-        self._update_current_progress_remaining(self.num_timesteps, self._total_timesteps)
-
-        # For DQN, check if the target network should be updated
-        # and update the exploration schedule
-        # For SAC/TD3, the update is dones as the same time as the gradient update
-        # see https://github.com/hill-a/stable-baselines/issues/900
-        self._on_step()
-
-        for idx, done in enumerate(dones):
-            if done:
-                # Update stats
-                num_collected_episodes += 1
-                self._episode_num += 1
-
-                if action_noise is not None:
-                    action_noise.reset()
-
-                # Log training infos
-                if log_interval is not None and self._episode_num % log_interval == 0:
-                    self._dump_logs()
-
-    rollout_return = RolloutReturn(num_collected_steps * env_num_envs, num_collected_episodes, continue_training)
-    # print('bt_off_policy_collect_rollouts', rollout_return)
-    yield rollout_return
+# def bt_off_policy_collect_rollouts(
+#         self: OffPolicyAlgorithm,
+#         train_freq: TrainFreq,
+#         replay_buffer: ReplayBuffer,
+#         action_noise: Optional[ActionNoise] = None,
+#         learning_starts: int = 0,
+#         log_interval: Optional[int] = None,
+# ) -> typing.Generator:
+#     # Switch to eval mode (this affects batch norm / dropout)
+#     self.policy.set_training_mode(False)
+#
+#     num_collected_steps, num_collected_episodes = 0, 0
+#     env_num_envs = 1
+#     assert train_freq.frequency > 0, "Should at least collect one step or episode."
+#
+#     if self.use_sde:
+#         self.actor.reset_noise(env_num_envs)
+#
+#     continue_training = True
+#
+#     while should_collect_more_steps(train_freq, num_collected_steps, num_collected_episodes):
+#         if self.use_sde and self.sde_sample_freq > 0 and num_collected_steps % self.sde_sample_freq == 0:
+#             # Sample a new noise matrix
+#             self.actor.reset_noise(env_num_envs)
+#
+#         # Select action randomly or according to policy
+#         actions, buffer_actions = self._sample_action(learning_starts, action_noise, env_num_envs)
+#
+#         # Rescale and perform action
+#         new_obs, rewards, dones, infos = yield actions[0]
+#
+#         # print('train_freq', train_freq, 'num_collected_steps', num_collected_steps, 'num_collected_episodes',
+#         #       num_collected_episodes)
+#
+#         # 数据都从单个处理成批量的
+#         if isinstance(new_obs, dict):
+#             new_obs = new_obs.copy()
+#             for k in new_obs:
+#                 new_obs[k] = np.expand_dims(new_obs[k], axis=0)
+#         else:
+#             new_obs = np.expand_dims(new_obs, axis=0)
+#         rewards = np.array([rewards])
+#         dones = np.array([dones])
+#         infos = [infos]
+#
+#         self.num_timesteps += env_num_envs
+#
+#         num_collected_steps += 1
+#
+#         # Retrieve reward and episode length if using Monitor wrapper
+#         self._update_info_buffer(infos, dones)
+#
+#         # Store data in replay buffer (normalized action and unnormalized observation)
+#         self._store_transition(replay_buffer, buffer_actions, new_obs, rewards, dones, infos)  # type: ignore[arg-type]
+#
+#         self._update_current_progress_remaining(self.num_timesteps, self._total_timesteps)
+#
+#         # For DQN, check if the target network should be updated
+#         # and update the exploration schedule
+#         # For SAC/TD3, the update is dones as the same time as the gradient update
+#         # see https://github.com/hill-a/stable-baselines/issues/900
+#         self._on_step()
+#
+#         for idx, done in enumerate(dones):
+#             if done:
+#                 # Update stats
+#                 num_collected_episodes += 1
+#                 self._episode_num += 1
+#
+#                 if action_noise is not None:
+#                     action_noise.reset()
+#
+#                 # Log training infos
+#                 if log_interval is not None and self._episode_num % log_interval == 0:
+#                     self._dump_logs()
+#
+#     rollout_return = RolloutReturn(num_collected_steps * env_num_envs, num_collected_episodes, continue_training)
+#     # print('bt_off_policy_collect_rollouts', rollout_return)
+#     yield rollout_return

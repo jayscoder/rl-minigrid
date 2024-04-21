@@ -172,7 +172,7 @@ class OnPolicyRLHandler(RLHandler):
         self.n_steps = 0
         self.model.rollout_buffer.reset()
 
-    def predict(self) -> np.ndarray:
+    def predict(self):
         """训练预测"""
         # Switch to eval mode (this affects batch norm / dropout)
         self.model.policy.set_training_mode(False)
@@ -299,6 +299,7 @@ class OnPolicyRLHandler(RLHandler):
         return self.model.rollout_buffer.full
 
     def train(self):
+        print('执行训练')
         # Display training infos
         if self.log_interval > 0 and self.iteration % self.log_interval == 0:
             assert self.model.ep_info_buffer is not None
@@ -319,130 +320,129 @@ class OnPolicyRLHandler(RLHandler):
         # 训练完成之后就清空缓存
         self.reset()
 
+# def bt_on_policy_collect_rollouts(self: OnPolicyAlgorithm, last_obs) -> typing.Generator:
+#     """
+#     Collect rollouts from an OnPolicyAlgorithm
+#     :param self:
+#     :param last_obs: last observation
+#
+#     collector = bt_on_policy_collect_rollouts(model, last_obs)
+#     action = next(collector)
+#     obs, reward, terminated, truncated, info = env.step(action)
+#     collector.send(obs, reward, terminated or truncated, info)
+#     """
+#     # Switch to eval mode (this affects batch norm / dropout)
+#     self.policy.set_training_mode(False)
+#     n_steps = 0
+#     self.rollout_buffer.reset()
+#     # Sample new weights for the state dependent exploration
+#     if self.use_sde:
+#         self.policy.reset_noise(1)
+#
+#     self._last_obs = np.expand_dims(last_obs, axis=0)
+#
+#     # callback.on_rollout_start()
+#     while not self.rollout_buffer.full:
+#         if self.use_sde and self.sde_sample_freq > 0 and n_steps % self.sde_sample_freq == 0:
+#             # Sample a new noise matrix
+#             self.policy.reset_noise(1)
+#
+#         with th.no_grad():
+#             # Convert to pytorch tensor or to TensorDict
+#             obs_tensor = obs_as_tensor(self._last_obs, self.device)
+#             actions, values, log_probs = self.policy(obs_tensor)
+#         actions = actions.cpu().numpy()
+#
+#         # Rescale and perform action
+#         clipped_actions = actions
+#
+#         if isinstance(self.action_space, spaces.Box):
+#             if self.policy.squash_output:
+#                 # Unscale the actions to match env bounds
+#                 # if they were previously squashed (scaled in [-1, 1])
+#                 clipped_actions = self.policy.unscale_action(clipped_actions)
+#             else:
+#                 # Otherwise, clip the actions to avoid out of bound error
+#                 # as we are sampling from an unbounded Gaussian distribution
+#                 clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
+#
+#         new_obs, rewards, dones, infos = yield clipped_actions[0]
+#
+#         # 数据都从单个处理成批量的
+#         if isinstance(new_obs, dict):
+#             # 处理一下字典数据的情况
+#             new_obs = new_obs.copy()
+#             for k in new_obs:
+#                 new_obs[k] = np.expand_dims(new_obs[k], axis=0)
+#         else:
+#             new_obs = np.expand_dims(new_obs, axis=0)
+#         rewards = np.array([rewards])
+#         dones = np.array([dones])
+#         infos = [infos]
+#
+#         self.num_timesteps += 1
+#
+#         # Give access to local variables
+#         # callback.update_locals(locals())
+#         # if not callback.on_step():
+#         #     return False
+#
+#         self._update_info_buffer(infos, dones)
+#         n_steps += 1
+#
+#         if isinstance(self.action_space, spaces.Discrete):
+#             # Reshape in case of discrete action
+#             actions = actions.reshape(-1, 1)
+#
+#         # Handle timeout by bootstraping with value function
+#         # see GitHub issue #633
+#         # 在环境因达到最大步数而非自然终止时，提供一个合理的未来价值估计，从而帮助学习算法更好地理解和学习到达该状态的长期影响。
+#         # 这种处理方式是对传统强化学习中的处理截断问题的一种常见实践。
+#         # 在没有这种处理时，算法可能会错误地认为达到步数限制是一种负面的结果，而实际上它仅仅是由环境的设定导致的。
+#         for idx, done in enumerate(dones):
+#             if (
+#                     done
+#                     and infos[idx].get("truncated", False)
+#             ):
+#                 terminal_obs = obs_as_tensor(self._last_obs, self.device)
+#                 with th.no_grad():
+#                     terminal_value = self.policy.predict_values(terminal_obs)[0]  # type: ignore[arg-type]
+#                 rewards[idx] += self.gamma * terminal_value
+#
+#         self.rollout_buffer.add(
+#                 self._last_obs,  # type: ignore[arg-type]
+#                 actions,
+#                 rewards,
+#                 self._last_episode_starts,  # type: ignore[arg-type]
+#                 values,
+#                 log_probs,
+#         )
+#         # print(
+#         #         f'collector_{self.n_steps}: {n_steps} actions={actions.tolist()} rewards={rewards.tolist()} dones={dones.tolist()} values={values.tolist()}')
+#
+#         self._last_obs = new_obs  # type: ignore[assignment]
+#         self._last_episode_starts = dones
+#
+#     with th.no_grad():
+#         # Compute value for the last timestep
+#         values = self.policy.predict_values(obs_as_tensor(new_obs, self.device))  # type: ignore[arg-type]
+#
+#     self.rollout_buffer.compute_returns_and_advantage(last_values=values, dones=dones)
 
-def bt_on_policy_collect_rollouts(self: OnPolicyAlgorithm, last_obs) -> typing.Generator:
-    """
-    Collect rollouts from an OnPolicyAlgorithm
-    :param self:
-    :param last_obs: last observation
-
-    collector = bt_on_policy_collect_rollouts(model, last_obs)
-    action = next(collector)
-    obs, reward, terminated, truncated, info = env.step(action)
-    collector.send(obs, reward, terminated or truncated, info)
-    """
-    # Switch to eval mode (this affects batch norm / dropout)
-    self.policy.set_training_mode(False)
-    n_steps = 0
-    self.rollout_buffer.reset()
-    # Sample new weights for the state dependent exploration
-    if self.use_sde:
-        self.policy.reset_noise(1)
-
-    self._last_obs = np.expand_dims(last_obs, axis=0)
-
-    # callback.on_rollout_start()
-    while not self.rollout_buffer.full:
-        if self.use_sde and self.sde_sample_freq > 0 and n_steps % self.sde_sample_freq == 0:
-            # Sample a new noise matrix
-            self.policy.reset_noise(1)
-
-        with th.no_grad():
-            # Convert to pytorch tensor or to TensorDict
-            obs_tensor = obs_as_tensor(self._last_obs, self.device)
-            actions, values, log_probs = self.policy(obs_tensor)
-        actions = actions.cpu().numpy()
-
-        # Rescale and perform action
-        clipped_actions = actions
-
-        if isinstance(self.action_space, spaces.Box):
-            if self.policy.squash_output:
-                # Unscale the actions to match env bounds
-                # if they were previously squashed (scaled in [-1, 1])
-                clipped_actions = self.policy.unscale_action(clipped_actions)
-            else:
-                # Otherwise, clip the actions to avoid out of bound error
-                # as we are sampling from an unbounded Gaussian distribution
-                clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
-
-        new_obs, rewards, dones, infos = yield clipped_actions[0]
-
-        # 数据都从单个处理成批量的
-        if isinstance(new_obs, dict):
-            # 处理一下字典数据的情况
-            new_obs = new_obs.copy()
-            for k in new_obs:
-                new_obs[k] = np.expand_dims(new_obs[k], axis=0)
-        else:
-            new_obs = np.expand_dims(new_obs, axis=0)
-        rewards = np.array([rewards])
-        dones = np.array([dones])
-        infos = [infos]
-
-        self.num_timesteps += 1
-
-        # Give access to local variables
-        # callback.update_locals(locals())
-        # if not callback.on_step():
-        #     return False
-
-        self._update_info_buffer(infos, dones)
-        n_steps += 1
-
-        if isinstance(self.action_space, spaces.Discrete):
-            # Reshape in case of discrete action
-            actions = actions.reshape(-1, 1)
-
-        # Handle timeout by bootstraping with value function
-        # see GitHub issue #633
-        # 在环境因达到最大步数而非自然终止时，提供一个合理的未来价值估计，从而帮助学习算法更好地理解和学习到达该状态的长期影响。
-        # 这种处理方式是对传统强化学习中的处理截断问题的一种常见实践。
-        # 在没有这种处理时，算法可能会错误地认为达到步数限制是一种负面的结果，而实际上它仅仅是由环境的设定导致的。
-        for idx, done in enumerate(dones):
-            if (
-                    done
-                    and infos[idx].get("truncated", False)
-            ):
-                terminal_obs = obs_as_tensor(self._last_obs, self.device)
-                with th.no_grad():
-                    terminal_value = self.policy.predict_values(terminal_obs)[0]  # type: ignore[arg-type]
-                rewards[idx] += self.gamma * terminal_value
-
-        self.rollout_buffer.add(
-                self._last_obs,  # type: ignore[arg-type]
-                actions,
-                rewards,
-                self._last_episode_starts,  # type: ignore[arg-type]
-                values,
-                log_probs,
-        )
-        # print(
-        #         f'collector_{self.n_steps}: {n_steps} actions={actions.tolist()} rewards={rewards.tolist()} dones={dones.tolist()} values={values.tolist()}')
-
-        self._last_obs = new_obs  # type: ignore[assignment]
-        self._last_episode_starts = dones
-
-    with th.no_grad():
-        # Compute value for the last timestep
-        values = self.policy.predict_values(obs_as_tensor(new_obs, self.device))  # type: ignore[arg-type]
-
-    self.rollout_buffer.compute_returns_and_advantage(last_values=values, dones=dones)
-
-
-def bt_on_policy_train(self: OnPolicyAlgorithm, iteration: int, log_interval: int):
-    # Display training infos
-    if log_interval > 0 and iteration % log_interval == 0:
-        assert self.ep_info_buffer is not None
-        time_elapsed = max((time.time_ns() - self.start_time) / 1e9, sys.float_info.epsilon)
-        fps = int((self.num_timesteps - self._num_timesteps_at_start) / time_elapsed)
-        self.logger.record("time/iterations", iteration, exclude="tensorboard")
-        if len(self.ep_info_buffer) > 0 and len(self.ep_info_buffer[0]) > 0:
-            self.logger.record("rollout/ep_rew_mean", safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer]))
-            self.logger.record("rollout/ep_len_mean", safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer]))
-        self.logger.record("time/fps", fps)
-        self.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
-        self.logger.record("time/total_timesteps", self.num_timesteps, exclude="tensorboard")
-        self.logger.dump(step=self.num_timesteps)
-
-    self.train()
+#
+# def bt_on_policy_train(self: OnPolicyAlgorithm, iteration: int, log_interval: int):
+#     # Display training infos
+#     if log_interval > 0 and iteration % log_interval == 0:
+#         assert self.ep_info_buffer is not None
+#         time_elapsed = max((time.time_ns() - self.start_time) / 1e9, sys.float_info.epsilon)
+#         fps = int((self.num_timesteps - self._num_timesteps_at_start) / time_elapsed)
+#         self.logger.record("time/iterations", iteration, exclude="tensorboard")
+#         if len(self.ep_info_buffer) > 0 and len(self.ep_info_buffer[0]) > 0:
+#             self.logger.record("rollout/ep_rew_mean", safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer]))
+#             self.logger.record("rollout/ep_len_mean", safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer]))
+#         self.logger.record("time/fps", fps)
+#         self.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
+#         self.logger.record("time/total_timesteps", self.num_timesteps, exclude="tensorboard")
+#         self.logger.dump(step=self.num_timesteps)
+#
+#     self.train()

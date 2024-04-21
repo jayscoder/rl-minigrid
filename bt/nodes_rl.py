@@ -3,18 +3,14 @@ from __future__ import annotations
 import numpy as np
 
 from bt.base import *
-from py_trees.common import Status
 from rl.nodes import Reward
 from stable_baselines3 import PPO, SAC, HerReplayBuffer, DQN, DDPG, TD3
-import gymnasium as gym
 from rl import RLBaseNode
-import typing
 from rl.logger import TensorboardLogger
-from rl.common import is_off_policy_algo
-from common import *
 from pybts import Composite, Switcher, Sequence, Selector, Behaviour
 from common.constants import *
 from rl.common import *
+from common.features import *
 
 
 class RLNode(BaseBTNode, RLBaseNode, ABC):
@@ -33,8 +29,6 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
                  domain: str = '',
                  save_path: str = '',  # 空代表不保存
                  save_interval: int | str = 0,
-                 deterministic: bool | str = False,
-                 train: bool | str = False,
                  tensorboard_log: str = '',
                  **kwargs
                  ):
@@ -45,9 +39,21 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
         self.path = path
         self.save_path = save_path
         self.save_interval = save_interval
-        self.deterministic = deterministic
-        self.train = train
         self.tensorboard_log = tensorboard_log
+
+    ### 参数列表 ###
+    @property
+    def exp_fill(self) -> bool:
+        """是否开启经验填充"""
+        return self.converter.bool(self.attrs.get('exp_fill', False))
+
+    @property
+    def train(self) -> bool:
+        return self.converter.bool(self.attrs.get('train', False))
+
+    @property
+    def deterministic(self) -> bool:
+        return self.converter.bool(self.attrs.get('deterministic', False))
 
     def to_data(self):
         return {
@@ -57,6 +63,8 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
             'path'         : self.path,
             'domain'       : self.domain,
             'save_interval': self.save_interval,
+            'train'        : self.train,
+
         }
 
     def rl_model_args(self) -> dict:
@@ -216,9 +224,30 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
         super().reset()
         RLBaseNode.reset(self)
 
+    def observe(self):
+        if self.exp_fill and self.train:
+            # 如果需要进行经验填充，则先观测历史环境
+            self.observe_history()
+        # 观测环境
+        self.rl_observe(
+                train=self.train,
+                action=self.rl_action,
+                obs=self.rl_gen_obs(),
+                reward=self.rl_gen_reward(),
+                done=self.rl_gen_done(),
+                info=self.rl_gen_info(),
+                obs_index=self.env.exp_count - 1
+        )
+
+    def observe_history(self):
+        # 观测历史环境，由节点自己来自定义
+        pass
+
     def take_action(self):
+        # 在生成动作前先观测当前环境
+        self.observe()
         return self.rl_take_action(
-                train=self.converter.bool(self.train),
+                train=self.train,
                 deterministic=self.converter.bool(self.deterministic),
         )
 
@@ -231,10 +260,9 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
 
 
 class RLComposite(RLNode, Composite):
-    def __init__(self, exp_fill: bool | str = False, **kwargs):
+    def __init__(self, **kwargs):
         Composite.__init__(self, **kwargs)
         RLNode.__init__(self, **kwargs)
-        self.exp_fill = exp_fill
 
     def rl_action_space(self) -> gym.spaces.Space:
         if is_off_policy_algo(self.algo):
@@ -279,7 +307,7 @@ class RLComposite(RLNode, Composite):
             index = int(self.take_action()[0]) % len(self.children)
         else:
             index = self.take_action()
-        self.put_update_message('gen_index index={}'.format(index))
+        self.put_update_message(f'gen_index index={index} train={self.train}')
         return index
 
 
@@ -289,7 +317,11 @@ class RLSwitcher(RLComposite, Switcher):
     """
 
     def tick(self) -> typing.Iterator[Behaviour]:
-        yield from Switcher.tick(self)
+        if self.exp_fill and self.train and self.status in self.tick_again_status():
+            yield from self.switch_tick(index=self.gen_index(), tick_again_status=self.tick_again_status())
+        else:
+            yield from Switcher.tick(self)
+        self.rl_action = self.current_index  # 保存动作
 
 
 class RLSelector(RLComposite, Selector):
@@ -298,7 +330,16 @@ class RLSelector(RLComposite, Selector):
     """
 
     def tick(self) -> typing.Iterator[Behaviour]:
-        yield from Selector.tick(self)
+        if self.exp_fill and self.train and self.status in self.tick_again_status():
+            # 经验填充
+            yield from self.seq_sel_tick(
+                    tick_again_status=self.tick_again_status(),
+                    continue_status=[Status.FAILURE, Status.INVALID],
+                    no_child_status=Status.FAILURE,
+                    start_index=self.gen_index())
+        else:
+            yield from Selector.tick(self)
+        self.rl_action = self.current_index  # 保存动作
 
 
 class RLSequence(RLComposite, Sequence):
@@ -307,7 +348,16 @@ class RLSequence(RLComposite, Sequence):
     """
 
     def tick(self) -> typing.Iterator[Behaviour]:
-        yield from Sequence.tick(self)
+        if self.exp_fill and self.train and self.status in self.tick_again_status():
+            # 经验填充
+            yield from self.seq_sel_tick(
+                    tick_again_status=self.tick_again_status(),
+                    continue_status=[Status.SUCCESS],
+                    no_child_status=Status.SUCCESS,
+                    start_index=self.gen_index())
+        else:
+            yield from Sequence.tick(self)
+        self.rl_action = self.current_index  # 保存动作
 
 
 class RLCondition(RLNode, pybts.Condition):
@@ -452,10 +502,13 @@ class RLAction(RLNode):
         self.allow_actions = self.allow_actions.split(',')
         self.allow_actions = list(map(lambda x: ACTIONS_MAP[x], self.allow_actions))
 
+    def reset(self):
+        super().reset()
+
     def to_data(self):
         return {
             **super().to_data(),
-            'allow_actions': self.allow_actions
+            'allow_actions': self.allow_actions,
         }
 
     def rl_action_space(self) -> gym.spaces.Space:
@@ -469,6 +522,20 @@ class RLAction(RLNode):
         else:
             return gym.spaces.Discrete(len(self.allow_actions))
 
+    def observe_history(self):
+        """观测历史"""
+        for i in range(self.rl_obs_index + 1, len(self.env.exp_buffers) - 1):
+            exp_buffer = self.env.exp_buffers[i]
+            self.rl_observe(
+                    train=self.train,
+                    action=exp_buffer.action,
+                    obs=exp_buffer.obs,
+                    reward=exp_buffer.reward,
+                    done=exp_buffer.terminated or exp_buffer.truncated,
+                    info=exp_buffer.info,
+                    obs_index=i
+            )
+
     def updater(self) -> typing.Iterator[Status]:
         action = self.take_action()
         if is_off_policy_algo(self.algo):
@@ -476,7 +543,7 @@ class RLAction(RLNode):
             action = self.allow_actions[action]
         else:
             action = self.allow_actions[action]
-        
+
         self.put_action(action)
         yield Status.RUNNING
         # 看一下是否有变化

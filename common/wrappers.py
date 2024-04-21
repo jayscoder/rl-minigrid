@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import typing
 
-from minigrid.core.constants import *
 from common.utils import astar_find_path, manhattan_distance, iter_take, is_obs_same
 from common.constants import *
-from minigrid.wrappers import ObservationWrapper, ObsType, ImgObsWrapper, Any, DirectionObsWrapper
+from minigrid.wrappers import ObservationWrapper, Any
 from rl.models import *
-from pybts import Status
 import gymnasium as gym
 import numpy as np
 from minigrid.minigrid_env import MiniGridEnv
@@ -32,9 +30,8 @@ class MiniGridSimulation(gym.Wrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
         self.env_id = env.unwrapped.spec.id
-        self.step_count = 0
         self.episode = 0
-        self.buffers = []  # 数据存储池
+        self.exp_buffers: list[StepResult] = []  # 经验存储池
         self.done = False
         self.seed = 0
         self.train = False
@@ -52,8 +49,6 @@ class MiniGridSimulation(gym.Wrapper):
         self.reset()
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
-        if self.step_count > 0:
-            self.episode += 1
         self.gif_frames = []
         self.seed = seed
         self.done = False
@@ -64,24 +59,28 @@ class MiniGridSimulation(gym.Wrapper):
         info['truncated'] = False
         self.update_memory_image(obs)
         obs = np.transpose(self.memory_obs, (2, 0, 1))
-        self.buffers = [
+        self.exp_buffers = [
             StepResult(
                     action=None,
                     obs=obs,
                     info=info
             )
         ]
-        self.step_count = 0
         return obs, info
 
+    @property
+    def exp_count(self):
+        # 经验数量
+        return len(self.exp_buffers)
+
     def gen_obs(self):
-        return self.buffers[-1].obs
+        return self.exp_buffers[-1].obs
 
     def gen_info(self):
-        return self.buffers[-1].info
+        return self.exp_buffers[-1].info
 
     def gen_reward(self):
-        return self.buffers[-1].reward
+        return self.exp_buffers[-1].reward
 
     def put_action(self, action):
         self.actions.put_nowait(action)
@@ -95,7 +94,7 @@ class MiniGridSimulation(gym.Wrapper):
         return obs, accum_reward, terminated, truncated, info
 
     def step(self, action=None):
-        old_obs = self.buffers[-1].obs
+        old_obs = self.exp_buffers[-1].obs
 
         if action is None:
             action = self.action_space.sample()
@@ -106,11 +105,10 @@ class MiniGridSimulation(gym.Wrapper):
         info['truncated'] = truncated
         self.update_memory_image(obs)
         obs = np.transpose(self.memory_obs, (2, 0, 1))
-        self.buffers.append(
+        self.exp_buffers.append(
                 StepResult(action=action, obs=obs, reward=float(reward), terminated=terminated, truncated=truncated,
                            info=info))
 
-        self.step_count += 1
         return obs, reward, terminated, truncated, info
 
     def update_memory_image(self, obs):
