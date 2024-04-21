@@ -6,13 +6,13 @@ from common.constants import *
 
 class TurnLeft(BaseBTNode):
     def update(self) -> Status:
-        self.env.put_action(Actions.left)
+        self.put_action(Actions.left)
         return Status.SUCCESS
 
 
 class TurnRight(BaseBTNode):
     def update(self) -> Status:
-        self.env.put_action(Actions.right)
+        self.put_action(Actions.right)
         return Status.SUCCESS
 
 
@@ -55,7 +55,7 @@ class ManualControl(BaseBTNode):
 
             if event_key in key_to_action.keys():
                 action = key_to_action[event_key]
-                self.env.put_action(action)
+                self.put_action(action)
 
         return Status.SUCCESS
 
@@ -93,7 +93,7 @@ class OpenDoor(BaseBTNode):
         for _ in self.turn_to(door.pos):
             yield Status.RUNNING
 
-        self.env.put_action(Actions.toggle)
+        self.put_action(Actions.toggle)
         yield Status.RUNNING
         door = self.env.get_obs_item(door.pos)
         # 检查门是否打开了
@@ -106,7 +106,7 @@ class OpenDoor(BaseBTNode):
 
 class Pickup(BaseBTNode):
     def updater(self) -> typing.Iterator[Status]:
-        self.env.put_action(Actions.pickup)
+        self.put_action(Actions.pickup)
         agent_obs = self.env.agent_obs
         yield Status.RUNNING
         if agent_obs == self.env.agent_obs:
@@ -117,7 +117,7 @@ class Pickup(BaseBTNode):
 
 class Drop(BaseBTNode):
     def updater(self) -> typing.Iterator[Status]:
-        self.env.put_action(Actions.drop)
+        self.put_action(Actions.drop)
         agent_obs = self.env.agent_obs
         yield Status.RUNNING
         if agent_obs == self.env.agent_obs:
@@ -128,7 +128,7 @@ class Drop(BaseBTNode):
 
 class Toggle(BaseBTNode):
     def updater(self) -> typing.Iterator[Status]:
-        self.env.put_action(Actions.toggle)
+        self.put_action(Actions.toggle)
         agent_obs = self.env.agent_obs
         yield Status.RUNNING
         if agent_obs == self.env.agent_obs:

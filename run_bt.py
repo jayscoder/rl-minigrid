@@ -34,7 +34,7 @@ TREE = {
 }
 
 tree = RLTree(
-        root=builder.build_from_file(TREE['1']),
+        root=builder.build_from_file(TREE['2']),
 )
 
 policy = BTPolicy(env=env, tree=tree)

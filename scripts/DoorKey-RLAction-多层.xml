@@ -1,0 +1,60 @@
+<Root name="SAC-1">
+    <OneShot>
+        <Sequence>
+            <IsDoorOpen/>
+            <!--开门的奖励-->
+            <Reward domain="open_door" reward="1"/>
+        </Sequence>
+    </OneShot>
+
+    <RLSwitcher
+            algo="SAC"
+            name="RLSwitcher"
+            domain="default,open_door"
+            path="{{models_dir}}/{{name}}"
+            save_path="{{models_dir}}/{{name}}"
+            save_interval="50"
+            tensorboard_log="{{logs_dir}}/{{name}}"
+            log_interval="1"
+            verbose="0"
+            train="{{train}}">
+
+        <ApproachKey name="接近钥匙"/>
+        <PickUpKey name="拿钥匙"/>
+        <!--        <ApproachDoor name="接近门"/>-->
+        <!--        <OpenDoor name="打开门"/>-->
+        <!--OpenDoor-->
+        <!--        <MoveToGoal name="移动到终点"/>-->
+
+        <Sequence>
+            <IsKeyHeld/>
+            <!--接近/开门/Explore-->
+            <RLAction
+                    algo="SAC"
+                    name="SAC-1-RLAction"
+                    domain="open_door"
+                    path="{{models_dir}}/{{name}}"
+                    tensorboard_log="{{logs_dir}}/{{name}}"
+                    log_interval="1"
+                    save_path="{{models_dir}}/{{name}}"
+                    save_interval="50"
+                    verbose="0"
+                    train="{{train}}"/>
+        </Sequence>
+
+        <Sequence>
+            <!--移动到终点-->
+            <RLAction
+                    algo="SAC"
+                    name="SAC-1-RLAction"
+                    domain="default"
+                    path="{{models_dir}}/{{name}}"
+                    tensorboard_log="{{logs_dir}}/{{name}}"
+                    log_interval="1"
+                    save_path="{{models_dir}}/{{name}}"
+                    save_interval="50"
+                    verbose="0"
+                    train="{{train}}"/>
+        </Sequence>
+    </RLSwitcher>
+</Root>

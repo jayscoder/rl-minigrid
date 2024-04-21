@@ -211,7 +211,7 @@ class RLBaseNode(ABC):
                 curr_reward += self.context['reward'].get(scope, 0)
             return curr_reward - self.rl_accum_reward
         raise NotImplemented
-
+    
     @abstractmethod
     def rl_gen_done(self) -> bool:
         # 返回当前环境是否结束

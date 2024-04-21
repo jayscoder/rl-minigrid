@@ -1,8 +1,10 @@
-<Sequence>
+<Selector>
     <ExploreUnseen name="探索"/>
-    <ApproachKey name="接近钥匙"/>
-    <PickUpKey name="拿钥匙"/>
-    <ApproachDoor name="接近门"/>
-    <OpenDoor name="打开门"/>
-    <MoveToGoal name="移动到终点"/>
-</Sequence>
+    <Sequence>
+        <ApproachKey name="接近钥匙" color="red"/>
+        <PickUpKey name="拿钥匙" color="red"/>
+        <ApproachDoor name="接近门" color="red"/>
+        <OpenDoor name="打开门" color="red"/>
+        <MoveToGoal name="移动到终点" color="red"/>
+    </Sequence>
+</Selector>

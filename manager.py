@@ -96,6 +96,7 @@ class Manager:
             obs, accum_reward, terminated, truncated, info = None, 0, False, False, None
             with tqdm(total=2600, desc=f'[{episode}, train={train}]') as pbar:
                 while not env.done:
+                    policy.tree.context['step'] = pbar.n
                     policy.take_action()
                     if track:
                         board.track({
@@ -104,7 +105,6 @@ class Manager:
                             'actions'     : pybts.utility.read_queue_without_destroying(env.actions)
                         })
                     obs, reward, terminated, truncated, info = env.update()
-                    MiniGridEnv
                     # 将环境奖励存储到默认学习域中
                     policy.tree.context['reward']['default'] += reward
 

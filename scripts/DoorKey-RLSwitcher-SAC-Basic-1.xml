@@ -8,10 +8,18 @@
         </Sequence>
     </OneShot>
 
+    <OneShot>
+        <Sequence>
+            <IsKeyHeld/>
+            <!--开门的奖励-->
+            <Reward domain="held_key" reward="1"/>
+        </Sequence>
+    </OneShot>
+
     <RLSwitcher
             algo="SAC"
             name="RLSwitcher"
-            domain="default,open_door"
+            domain="default,open_door,held_key"
             path="{{models_dir}}/{{name}}"
             save_path="{{models_dir}}/{{name}}"
             save_interval="50"
@@ -24,12 +32,17 @@
         <TurnRight/>
         <MoveForward/>
         <Pickup/>
-        <Drop/>
+
+        <Sequence>
+            <Drop/>
+            <Reward domain="drop_success" reward="1"/>
+        </Sequence>
+
         <Toggle/>
 
-<!--        <ApproachKey name="接近钥匙"/>-->
-<!--        <PickUpKey name="拿钥匙"/>-->
-<!--        <OpenDoor name="打开门"/>-->
+        <ApproachKey name="接近钥匙"/>
+        <PickUpKey name="拿钥匙"/>
+        <OpenDoor name="打开门"/>
 
     </RLSwitcher>
 </Root>

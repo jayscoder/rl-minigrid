@@ -231,9 +231,10 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
 
 
 class RLComposite(RLNode, Composite):
-    def __init__(self, **kwargs):
+    def __init__(self, exp_fill: bool | str = False, **kwargs):
         Composite.__init__(self, **kwargs)
         RLNode.__init__(self, **kwargs)
+        self.exp_fill = exp_fill
 
     def rl_action_space(self) -> gym.spaces.Space:
         if is_off_policy_algo(self.algo):
@@ -475,8 +476,8 @@ class RLAction(RLNode):
             action = self.allow_actions[action]
         else:
             action = self.allow_actions[action]
-
-        self.env.put_action(action)
+        
+        self.put_action(action)
         yield Status.RUNNING
         # 看一下是否有变化
         info = self.env.gen_info()

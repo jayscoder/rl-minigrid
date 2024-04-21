@@ -13,16 +13,15 @@ class IsObjectFound(BaseBTNode, pybts.Condition):
 
     如果物体被自己拾取，则物体的位置和自己的位置相同
     """
-
     @property
     def object(self) -> str:
         # 目标位置的物体
-        return self.converter.render(self.attrs['object'])
+        return self.converter.str(self.attrs['object'])
 
     @property
     def color(self) -> str:
         # 目标位置的物体的颜色
-        return self.converter.render(self.attrs.get('color', ''))
+        return self.converter.str(self.attrs.get('color', ''))
 
     def update(self) -> Status:
         obs = self.env.find_obs(obj=self.object, color=self.color)

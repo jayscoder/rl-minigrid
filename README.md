@@ -42,3 +42,15 @@ python render_all_bt.py
 
 
 
+1个
+
+
+1红色门，1蓝色门
+1红色钥匙，1蓝色钥匙
+
+Selector/Sequence/Switcher
+> Selector：备选项
+> Sequence： 预设动作序列
+> Switcher: 自己学习动作序列
+
+
