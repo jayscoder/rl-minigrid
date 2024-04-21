@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gym.spaces
 import numpy as np
 
 from bt.base import *
@@ -10,7 +11,7 @@ from rl.logger import TensorboardLogger
 from pybts import Composite, Switcher, Sequence, Selector, Behaviour
 from common.constants import *
 from rl.common import *
-from common.features import *
+from bt.features import *
 
 
 class RLNode(BaseBTNode, RLBaseNode, ABC):
@@ -28,6 +29,7 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
                  ):
         super().__init__(**kwargs)
         RLBaseNode.__init__(self)
+        self.action_start_debug_info = self.debug_info.copy()  # 缓存debug数据，方便做差值
 
     ### 参数列表 ###
     @property
@@ -80,32 +82,28 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
             'save_interval': self.save_interval,
             'save_path'    : self.save_path,
             'train'        : self.train,
+            'obs'          : self.rl_gen_obs()
         }
 
     def rl_model_args(self) -> dict:
         # 这里来实现模型的参数
         policy_kwargs = dict(
-                features_extractor_class=CNNMinigridFeaturesExtractor,
+                features_extractor_class=RLBTFeaturesExtractor,
                 features_extractor_kwargs=dict(features_dim=128),
         )
 
         attrs = {
             'policy_kwargs': policy_kwargs,
+            'policy'       : 'MultiInputPolicy'
         }
 
         if 'SAC' in self.algo:
             attrs.update({
-                'train_freq': (10, "step"),
+                'train_freq'     : (1, "episode"),
+                'learning_starts': 50,
             })
 
         return attrs
-        # return {
-        #     'policy_kwargs': policy_kwargs,
-        #     # 'learning_starts': learning_starts,
-        #     # 'batch_size'     : batch_size,
-        #     # 'train_freq'   : (10, "step"),
-        #     # 'gradient_steps' : 1,
-        # }
 
     def setup(self, **kwargs: typing.Any) -> None:
         super().setup(**kwargs)
@@ -185,10 +183,21 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
         return self.env.action_space
 
     def rl_observation_space(self) -> gym.spaces.Space:
-        return self.env.observation_space
+        return gym.spaces.Dict(
+                {
+                    'image'          : self.env.observation_space,
+                    'children_status': gym.spaces.MultiDiscrete([4] * len(self.children)),
+                    'status_count'   : gym.spaces.Box(low=0, high=100, shape=(2,), dtype=np.int32)
+                }
+        )
 
     def rl_gen_obs(self):
-        return self.env.gen_obs()
+        return {
+            'image'          : self.env.gen_obs(),
+            'children_status': children_status_ids(self),
+            'status_count'   : [self.debug_info['success_count'] - self.action_start_debug_info['success_count'],
+                                self.debug_info['failure_count'] - self.action_start_debug_info['success_count']]
+        }
 
     def rl_gen_info(self) -> dict:
         return self.env.gen_info()
@@ -251,11 +260,16 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
 
     def take_action(self):
         # 在生成动作前先观测当前环境
+        last_action = self.rl_action
         self.observe()
-        return self.rl_take_action(
+        action = self.rl_take_action(
                 train=self.train,
                 deterministic=self.converter.bool(self.deterministic),
         )
+        if np.any(last_action != action):
+            # 动作改变了
+            self.action_start_debug_info = self.debug_info.copy()  # 缓存下来，方便做差值减去之前的成功/失败数量
+        return action
 
     def save_model(self, filepath: str = ''):
         if filepath == '':
@@ -274,39 +288,6 @@ class RLComposite(RLNode, Composite):
         if is_off_policy_algo(self.algo):
             return gym.spaces.Box(low=0, high=len(self.children))
         return gym.spaces.Discrete(len(self.children))
-
-    def rl_observation_space(self) -> gym.spaces.Space:
-        return gym.spaces.Dict(
-                {
-                    'image' : RLNode.rl_observation_space(self),
-                    'status': gym.spaces.MultiDiscrete([4] * len(self.children))
-                }
-        )
-
-    def rl_gen_obs(self):
-        return {
-            'image' : RLNode.rl_gen_obs(self),
-            'status': children_status_ids(self)
-        }
-
-    def rl_model_args(self) -> dict:
-        # 这里来实现模型的参数
-        policy_kwargs = dict(
-                features_extractor_class=CompositeFeaturesExtractor,
-                features_extractor_kwargs=dict(features_dim=128),
-        )
-
-        attrs = {
-            'policy_kwargs': policy_kwargs,
-            'policy'       : 'MultiInputPolicy'
-        }
-
-        if 'SAC' in self.algo:
-            attrs.update({
-                'train_freq': (1, "episode"),
-            })
-
-        return attrs
 
     def gen_index(self) -> int:
         if is_off_policy_algo(self.algo):

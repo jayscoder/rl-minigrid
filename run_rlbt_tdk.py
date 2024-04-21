@@ -39,4 +39,4 @@ name = f'{ENV_NO}-{TREE_NAME}'
 
 if __name__ == '__main__':
     manager = Manager(code_file=__file__, env=env, debug=True, name=name)
-    manager.run_policy(policy=policy, track=True, train=True, episodes=2000)
+    manager.run_policy(policy=policy, track=False, train=True, episodes=2000)
