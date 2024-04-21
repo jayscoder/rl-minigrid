@@ -41,5 +41,5 @@ tree = RLTree(
 policy = BTPolicy(env=env, tree=tree)
 
 if __name__ == '__main__':
-    manager = Manager(code_file=__file__, env=env, debug=True, name='任务名称写在这里', version='v1') # 区分不同的版本
-    manager.run_policy(policy=policy, track=True, train=False)
+    manager = Manager(code_file=__file__, env=env, debug=True, name='任务名称写在这里', version='版本1')
+    manager.run_policy(policy=policy, track=False, train=False)
