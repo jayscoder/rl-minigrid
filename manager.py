@@ -34,16 +34,31 @@ def make_env(env_id, render: bool = False):
     return gym.make(env_id, render_mode='human' if (args.render or render) else 'rgb_array')
 
 
+def folder_run_id(folder: str):
+    os.makedirs(folder, exist_ok=True)
+    id_path = os.path.join(folder, "run_id.txt")
+    if os.path.exists(id_path):
+        with open(id_path, "r") as f:
+            run_id = int(f.read())
+    else:
+        run_id = 0
+    run_id += 1
+    with open(id_path, mode="w") as f:
+        f.write('{}'.format(run_id))
+    return run_id
+
+
 class Manager:
 
-    def __init__(self, code_file: str, env: gym.Env, version: str = 'v0', debug=args.debug, name=''):
+    def __init__(self, code_file: str, env: gym.Env, debug=args.debug, name=''):
         self.code_file = code_file
         self.base_dir = os.path.dirname(code_file)
         self.filename = code_file.split('/')[-1].split('.')[0]
         self.name = name or self.filename
         self.version = version
-        self.logs_dir = os.path.join(self.base_dir, 'logs', self.version, self.name)
-        self.models_dir = os.path.join(self.base_dir, 'models', self.version, self.name)
+        self.run_id = str(folder_run_id(os.path.join(self.base_dir, 'logs', self.name)))
+        self.logs_dir = os.path.join(self.base_dir, 'logs', self.name, self.run_id)
+        self.models_dir = os.path.join(self.base_dir, 'models', self.name, self.run_id)
         self.env = env
         os.makedirs(self.logs_dir, exist_ok=True)
         os.makedirs(self.models_dir, exist_ok=True)
@@ -72,7 +87,6 @@ class Manager:
             'base_dir'  : self.base_dir,
             'filename'  : self.filename,
             'debug'     : self.debug,
-            'version'   : self.version
         })
         policy.tree.setup()
         policy.reset()

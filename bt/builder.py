@@ -80,5 +80,6 @@ class BTBuilder(RLBuilder):
         )
 
         self.register_node(
-                MakeTrouble
+                MakeTrouble,
+                ToggleTargetColor
         )

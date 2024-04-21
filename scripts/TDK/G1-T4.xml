@@ -1,0 +1,38 @@
+<Root>
+
+    <!--    <OneShot>-->
+    <!--        <Sequence>-->
+    <!--            <IsDoorOpen/>-->
+    <!--            &lt;!&ndash;开门的奖励&ndash;&gt;-->
+    <!--            <Reward domain="open_door" reward="0.1"/>-->
+    <!--        </Sequence>-->
+    <!--    </OneShot>-->
+    <OneShot>
+        <ToggleTargetColor colors="red,yellow"/>
+    </OneShot>
+
+    <RLSwitcher
+            algo="SAC"
+            name="SAC-RLSwitcher"
+            domain="default"
+            path="{{models_dir}}/{{name}}"
+            save_path="{{models_dir}}/{{name}}"
+            save_interval="20"
+            tensorboard_log="{{logs_dir}}/{{name}}"
+            log_interval="1"
+            verbose="0"
+            exp_fill="false"
+            train="{{train}}">
+
+        <ToggleTargetColor colors="red,yellow"/>
+
+        <Drop name="放下钥匙"/>
+        <PickUpKey name="拿钥匙"/>
+        <ExploreUnseen name="探索"/>
+        <MoveToGoal name="移动到终点"/>
+        <OpenDoor name="打开门"/>
+
+        <ApproachKey name="接近钥匙" color="{{color}}"/>
+        <ApproachDoor name="接近门" color="{{color}}"/>
+    </RLSwitcher>
+</Root>

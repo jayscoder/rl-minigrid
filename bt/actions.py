@@ -87,7 +87,7 @@ class OpenDoor(BaseBTNode):
         # 检查门是否打开了
         if door.state == States.open:
             # 门之前已经打开了
-            yield Status.SUCCESS
+            yield Status.FAILURE
             return
 
         for _ in self.turn_to(door.pos):
@@ -358,3 +358,24 @@ class TurnToDoor(TurnToObject):
     @property
     def object(self) -> str:
         return 'door'
+
+
+class ToggleTargetColor(BaseBTNode):
+    """
+    切换目标颜色，并存储到黑板变量里
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.index = 0
+
+    @property
+    def colors(self) -> list[str]:
+        return self.converter.str_list(self.attrs['colors'].split(','))
+
+    def update(self) -> Status:
+        self.context['color'] = self.colors[self.index]
+        self.index = (self.index + 1) % len(self.colors)
+        return Status.SUCCESS
+
+
