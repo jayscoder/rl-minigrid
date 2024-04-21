@@ -27,7 +27,7 @@
         <ApproachDoor name="接近门"/>
         <!--        <OpenDoor name="打开门"/>-->
         <MoveToGoal name="移动到终点"/>
-
+        
         <RLAction
                 algo="SAC"
                 name="SAC-RLAction"
