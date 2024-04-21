@@ -49,10 +49,9 @@ class TwoDoorKeyEnv(RandomGoalDoorKeyEnv):
         self.grid.wall_rect(0, 0, width, height)
 
         # Create a vertical splitting wall
-        splitIdxs = []
         while True:
             splitIdxs = [self._rand_int(1, width - 2), self._rand_int(1, width - 2)]
-            if abs(splitIdxs[0] - splitIdxs[1]) > 2:
+            if abs(splitIdxs[0] - splitIdxs[1]) > 3:
                 break
         colors = ['red', 'yellow']
         random.shuffle(colors)

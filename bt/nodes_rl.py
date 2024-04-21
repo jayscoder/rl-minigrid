@@ -30,6 +30,7 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
         super().__init__(**kwargs)
         RLBaseNode.__init__(self)
         self.action_start_debug_info = self.debug_info.copy()  # 缓存debug数据，方便做差值
+        self.action_start_children_debug_info = [child.debug_info.copy() for child in self.children]
 
     ### 参数列表 ###
     @property
@@ -185,18 +186,24 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
     def rl_observation_space(self) -> gym.spaces.Space:
         return gym.spaces.Dict(
                 {
-                    'image'          : self.env.observation_space,
-                    'children_status': gym.spaces.MultiDiscrete([4] * len(self.children)),
-                    'status_count'   : gym.spaces.Box(low=0, high=100, shape=(2,), dtype=np.int32)
+                    'image'                : self.env.observation_space,
+                    'children_status_count': gym.spaces.Box(low=0, high=100, shape=(2 * len(self.children),),
+                                                            dtype=np.int32),
+                    'status_count'         : gym.spaces.Box(low=0, high=100, shape=(2,), dtype=np.int32)
                 }
         )
 
     def rl_gen_obs(self):
+        children_status_count = []
+        for i, child in enumerate(self.children):
+            assert isinstance(child, Node)
+            for k in ['success_count', 'failure_count']:
+                children_status_count.append(child.debug_info[k] - self.action_start_children_debug_info[i][k])
         return {
-            'image'          : self.env.gen_obs(),
-            'children_status': children_status_ids(self),
-            'status_count'   : [self.debug_info['success_count'] - self.action_start_debug_info['success_count'],
-                                self.debug_info['failure_count'] - self.action_start_debug_info['success_count']]
+            'image'                : self.env.gen_obs(),
+            'children_status_count': children_status_count,
+            'status_count'         : [self.debug_info['success_count'] - self.action_start_debug_info['success_count'],
+                                      self.debug_info['failure_count'] - self.action_start_debug_info['success_count']]
         }
 
     def rl_gen_info(self) -> dict:
@@ -269,6 +276,7 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
         if np.any(last_action != action):
             # 动作改变了
             self.action_start_debug_info = self.debug_info.copy()  # 缓存下来，方便做差值减去之前的成功/失败数量
+            self.action_start_children_debug_info = [child.debug_info.copy() for child in self.children]
         return action
 
     def save_model(self, filepath: str = ''):
