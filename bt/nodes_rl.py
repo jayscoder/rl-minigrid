@@ -293,7 +293,7 @@ class RLSwitcher(RLComposite, Switcher):
 
 class RLSelector(RLComposite, Selector):
     """
-    将某个子节点作为开头来执行
+    将某个子节点作为开头来执行，剩下的按照Selector的规则来
     """
 
     def tick(self) -> typing.Iterator[Behaviour]:
@@ -302,7 +302,7 @@ class RLSelector(RLComposite, Selector):
 
 class RLSequence(RLComposite, Sequence):
     """
-    将某个子节点作为开头来执行
+    将某个子节点作为开头来执行，剩下的按照Sequence的规则来
     """
 
     def tick(self) -> typing.Iterator[Behaviour]:

@@ -26,15 +26,16 @@ builder = BTBuilder()
 
 TREE = {
     '1': 'scripts/DoorKey-RLSequence-SAC.xml',
-    '2': 'scripts/DoorKey-RLSequence-MakeTrouble-SAC.xml'
+    '2': 'scripts/DoorKey-RLSequence-MakeTrouble-SAC.xml',
+    '3': 'scripts/DoorKey-RLSwitcher-SAC-Basic.xml'
 }
 
 tree = RLTree(
-        root=builder.build_from_file(TREE['2']),
+        root=builder.build_from_file(TREE['3']),
 )
 
 policy = BTPolicy(env=env, tree=tree)
 
 if __name__ == '__main__':
     manager = Manager(code_file=__file__, env=env, debug=True)
-    manager.run_policy(policy=policy, track=True, train=True)
+    manager.run_policy(policy=policy, track=True, train=False)

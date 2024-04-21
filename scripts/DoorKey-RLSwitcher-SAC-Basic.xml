@@ -1,20 +1,31 @@
-<RLSwitcher
-        algo="SAC"
-        name="RLSwitcher"
-        domain="default"
-        path="{{models_dir}}/{{name}}"
-        save_path="{{models_dir}}/{{name}}"
-        save_interval="50"
-        tensorboard_log="{{logs_dir}}/{{name}}"
-        log_interval="1"
-        verbose="0"
-        train="{{train}}">
+<Root>
 
-    <TurnLeft/>
-    <TurnRight/>
-    <MoveForward/>
-    <Pickup/>
-    <Drop/>
-    <Toggle/>
+    <OneShot>
+        <Sequence>
+            <IsDoorOpen/>
+            <!--开门的奖励-->
+            <Reward domain="open_door" reward="1"/>
+        </Sequence>
+    </OneShot>
 
-</RLSwitcher>
+    <RLSwitcher
+            algo="SAC"
+            name="RLSwitcher"
+            domain="default,open_door"
+            path="{{models_dir}}/{{name}}"
+            save_path="{{models_dir}}/{{name}}"
+            save_interval="50"
+            tensorboard_log="{{logs_dir}}/{{name}}"
+            log_interval="1"
+            verbose="0"
+            train="{{train}}">
+
+        <TurnLeft/>
+        <TurnRight/>
+        <MoveForward/>
+        <Pickup/>
+        <Drop/>
+        <Toggle/>
+
+    </RLSwitcher>
+</Root>

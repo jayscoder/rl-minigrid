@@ -13,10 +13,10 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 import random
 
 parser = argparse.ArgumentParser()
-# --train
-parser.add_argument('--train', action='store_true')
-parser.add_argument('--render', action='store_true')
-parser.add_argument('--track', action='store_true')
+parser.add_argument('--train', action='store_true')  # 是否开启训练
+parser.add_argument('--render', action='store_true')  # 是否开启渲染
+parser.add_argument('--track', action='store_true')  # 是否开启pybts监控
+parser.add_argument('--debug', action='store_true')  # 是否开启DEBUG模式，debug模式下会有更多的输出内容
 args = parser.parse_args()
 
 
@@ -36,7 +36,7 @@ def make_env(env_id, render: bool = False):
 
 class Manager:
 
-    def __init__(self, code_file: str, env: gym.Env, version: str = 'v0', debug=False):
+    def __init__(self, code_file: str, env: gym.Env, version: str = 'v0', debug=args.debug):
         self.code_file = code_file
         self.base_dir = os.path.dirname(code_file)
         self.filename = code_file.split('/')[-1].split('.')[0]
@@ -47,19 +47,22 @@ class Manager:
         os.makedirs(self.logs_dir, exist_ok=True)
         os.makedirs(self.models_dir, exist_ok=True)
         self.logger = TensorboardLogger(folder=self.logs_dir, verbose=1)
-        self.debug = debug
+        self.debug = debug or args.debug
 
-    def run_model(self, model: BaseAlgorithm, train: bool = False):
+    def run_model(self, model: BaseAlgorithm, train: bool = args.train):
+        """运行一个强化学习模型"""
         model_path = os.path.join(self.models_dir, self.filename)
         os.makedirs(self.models_dir, exist_ok=True)
         model.tensorboard_log = self.logs_dir
-        if args.train or train:
+        train = train or args.train
+        if train:
             model.learn(2e5, progress_bar=True)
             model.save(model_path)
         model = model.load(model_path)
         self.evaluate_model(model=model)
 
     def run_policy(self, policy: BTPolicy, train: bool = False, track: bool = False, episodes: int = 100):
+        """运行一个行为树策略"""
         train = train or args.train
         models_dir = os.path.join(self.base_dir, 'models', self.filename)
         os.makedirs(models_dir, exist_ok=True)
@@ -101,7 +104,7 @@ class Manager:
                             'actions'     : pybts.utility.read_queue_without_destroying(env.actions)
                         })
                     obs, reward, terminated, truncated, info = env.update()
-
+                    MiniGridEnv
                     # 将环境奖励存储到默认学习域中
                     policy.tree.context['reward']['default'] += reward
 

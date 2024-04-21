@@ -4,7 +4,7 @@ from bt import BTBuilder
 from pybts.display import render_node
 
 """
-生成scripts中所有行为树的图
+生成scripts中所有行为树的图到scripts/images中
 """
 
 SCRIPTS_PATH = 'scripts'
