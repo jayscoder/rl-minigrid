@@ -1,0 +1,7 @@
+<Root>
+
+    <MakeTrouble name="捣乱任务"/>
+
+    <include path="scripts/DoorKey-Simplified.xml"/>
+
+</Root>
