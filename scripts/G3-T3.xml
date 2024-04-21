@@ -18,7 +18,7 @@
             tensorboard_log="{{logs_dir}}/{{name}}"
             log_interval="1"
             verbose="0"
-            exp_fill="true"
+            exp_fill="false"
             train="{{train}}">
 
         <ExploreUnseen name="探索"/>
@@ -38,7 +38,7 @@
                 tensorboard_log="{{logs_dir}}/{{name}}"
                 log_interval="1"
                 verbose="0"
-                exp_fill="false"
+                exp_fill="true"
                 train="{{train}}"
         />
         <!--        <TurnLeft/>-->
