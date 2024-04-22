@@ -22,8 +22,9 @@
             log_interval="1"
             verbose="0"
             exp_fill="false"
-            train="{{train}}">
-
+            train="{{train}}"
+            obs_context_color="true"
+    >
         <ToggleTargetColor colors="red,yellow"/>
 
         <Drop name="放下钥匙"/>

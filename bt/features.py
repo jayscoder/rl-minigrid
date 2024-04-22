@@ -57,6 +57,10 @@ class RLBTFeaturesExtractor(BaseFeaturesExtractor):
         input_features = n_flatten
         input_features += observation_space['children_status_count'].sample().shape[0]
         input_features += observation_space['status_count'].sample().shape[0]
+        try:
+            input_features += observation_space['others'].sample().shape[0]
+        except:
+            pass
         self.linear = nn.Sequential(
                 nn.Linear(in_features=input_features,
                           out_features=features_dim),
@@ -66,7 +70,8 @@ class RLBTFeaturesExtractor(BaseFeaturesExtractor):
         features = self.cnn(obs['image'])
         features = torch.cat((obs['children_status_count'], features), dim=1)
         features = torch.cat((obs['status_count'], features), dim=1)
-
+        if 'others' in obs:
+            features = torch.cat((obs['others'], features), dim=1)
         return self.linear(features)
 
 #

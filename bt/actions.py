@@ -378,4 +378,3 @@ class ToggleTargetColor(BaseBTNode):
         self.index = (self.index + 1) % len(self.colors)
         return Status.SUCCESS
 
-

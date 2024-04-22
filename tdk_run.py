@@ -19,7 +19,10 @@ ENVS = {
 
 ENV_NO = 'TDK16'
 TREE_GROUP = 'TDK'
-TREE_NAMES = [f'G2-T{i}' for i in range(8)]  # 树名
+# TREE_NAMES = [f'G2-T{i}' for i in range(8)]  # 树名
+TREE_NAMES = [f'G1-T{i + 1}' for i in range(5)]  # 树名
+LOGS = 'logs'
+
 builder = BTBuilder()
 
 
@@ -37,8 +40,8 @@ def run(tree_name: str):
 
     policy = BTPolicy(env=env, tree=tree)
 
-    name = f'{ENV_NO}-{tree_name}'
-    manager = Manager(code_file=__file__, env=env, debug=False, name=name)
+    name = os.path.join(TREE_GROUP, tree_name)
+    manager = Manager(code_file=__file__, env=env, debug=False, name=name, logs=LOGS)
     manager.run_policy(policy=policy, track=False, train=True, episodes=2000)
 
 

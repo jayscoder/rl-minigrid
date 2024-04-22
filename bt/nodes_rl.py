@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import gym.spaces
+import numpy as np
+
 from bt.base import *
 from rl.nodes import Reward
 from stable_baselines3 import PPO, SAC, HerReplayBuffer, DQN, DDPG, TD3
@@ -79,6 +82,10 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
     def obs_children_status_count(self) -> bool:
         """是否观测自己孩子节点的状态数量"""
         return self.converter.bool(self.attrs.get('obs_children_status_count', True))
+
+    @property
+    def obs_context_color(self) -> bool:
+        return self.converter.bool(self.attrs.get('obs_context_color', False))
 
     def to_data(self):
         return {
@@ -201,13 +208,19 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
         return self.env.action_space
 
     def rl_observation_space(self) -> gym.spaces.Space:
+        others_count = 0
+        if self.obs_context_color:
+            others_count += 1
+        spac = {
+            'image'                : self.env.observation_space,
+            'children_status_count': gym.spaces.Box(low=0, high=100, shape=(2 * len(self.children),),
+                                                    dtype=np.int32),
+            'status_count'         : gym.spaces.Box(low=0, high=100, shape=(2,), dtype=np.int32),
+        }
+        if others_count > 0:
+            spac['others'] = gym.spaces.Box(low=0, high=100, shape=(others_count,), dtype=np.int32)
         return gym.spaces.Dict(
-                {
-                    'image'                : self.env.observation_space,
-                    'children_status_count': gym.spaces.Box(low=0, high=100, shape=(2 * len(self.children),),
-                                                            dtype=np.int32),
-                    'status_count'         : gym.spaces.Box(low=0, high=100, shape=(2,), dtype=np.int32)
-                }
+                spac
         )
 
     def rl_gen_obs(self):
@@ -224,11 +237,17 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
                     children_status_count.append(child.debug_info[k] - self.action_start_children_debug_info[i][k])
                 else:
                     children_status_count.append(0)
-        return {
+        obs = {
             'image'                : self.env.gen_obs(),
             'children_status_count': children_status_count,
-            'status_count'         : status_count
+            'status_count'         : status_count,
         }
+        others = []
+        if self.obs_context_color:
+            others.append(COLOR_TO_IDX[self.context['color']])
+        if len(others) > 0:
+            obs['others'] = others
+        return obs
 
     def rl_gen_info(self) -> dict:
         return self.env.gen_info()
@@ -580,3 +599,73 @@ class RLReward(RLNode, Reward):
         self.reward = self.take_action()
         print('RLReward', self.reward)
         return Reward.update(self)
+
+# class RLSwitcherOrAction(RLAction, RLAction):
+#     def __init__(self, **kwargs):
+#         RLSwitcher.__init__(self, **kwargs)
+#         RLAction.__init__(self, **kwargs)
+#
+#     def rl_action_space(self) -> gym.spaces.Space:
+#         return gym.spaces.Box(
+#                 low=0,
+#                 high=1,
+#                 shape=(2,)
+#         )
+#
+#     def gen_index(self) -> int:
+#         if is_off_policy_algo(self.algo):
+#             index = int(self.take_action()[0]) % len(self.children)
+#         else:
+#             index = self.take_action()
+#         self.put_update_message(f'gen_index index={index} train={self.train}')
+#         return index
+#
+#     def observe_history(self):
+#         """观测历史"""
+#         for i in range(self.rl_obs_index + 1, len(self.env.exp_buffers) - 1):
+#             exp_buffer = self.env.exp_buffers[i]
+#             self.rl_observe(
+#                     train=self.train,
+#                     action=(0, exp_buffer.action),
+#                     obs=exp_buffer.obs,
+#                     reward=exp_buffer.reward,
+#                     done=exp_buffer.terminated or exp_buffer.truncated,
+#                     info=exp_buffer.info,
+#                     obs_index=i
+#             )
+#
+#     def explain_action(self, action: np.ndarray) -> (str, int):
+#         if action[0] >= 0.5:
+#             mode = 'composite'
+#             action = int(action[1] * len(self.children)) % len(self.children)
+#         else:
+#             mode = 'action'
+#             action = int(action[1] * len(self.allow_actions)) % len(self.allow_actions)
+#             action = self.allow_actions[action]
+#         return mode, action
+#
+#     # def tick(self) -> typing.Iterator[Behaviour]:
+#     #     rl_mode, act = self.explain_action(self.rl_action)
+#     #     if rl_mode == 'composite':
+#     #         if self.exp_fill and self.train and self.status in self.tick_again_status():
+#     #             yield from self.switch_tick(index=self.gen_index(), tick_again_status=self.tick_again_status())
+#     #             self.rl_action[1] = self.current_index  # 保存动作
+#     #         else:
+#     #             yield from Switcher.tick(self)
+#     #     else:
+#     #         yield RLAction.tick(self)
+#
+#     def updater(self) -> typing.Iterator[Status]:
+#         action = self.take_action()
+#         mode, action = self.explain_action(action)
+#         if mode == 'composite':
+#             self.children[action].tick_once()
+#         else:
+#             self.put_action(action)
+#         yield Status.RUNNING
+#         # 看一下是否有变化
+#         info = self.env.gen_info()
+#         if info['is_changed']:
+#             yield Status.SUCCESS
+#         else:
+#             yield Status.FAILURE

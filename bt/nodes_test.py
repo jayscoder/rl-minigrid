@@ -24,8 +24,9 @@ class MakeTrouble(BaseBTNode):
         if door_obs.state == States.open:
             self.trouble_count += 1
             yield from self.move_to((0, 0))
+            self.put_action(Actions.drop)
+            yield Status.RUNNING
             return
 
         yield Status.FAILURE
         return
-

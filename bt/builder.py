@@ -76,7 +76,8 @@ class BTBuilder(RLBuilder):
                 RLFloatValue,
                 RLFloatArrayValue,
                 RLReward,
-                RLAction
+                RLAction,
+                # RLSwitcherOrAction
         )
 
         self.register_node(

@@ -19,16 +19,20 @@ parser.add_argument('--track', action='store_true')  # 是否开启pybts监控
 parser.add_argument('--debug', action='store_true')  # 是否开启DEBUG模式，debug模式下会有更多的输出内容
 args = parser.parse_args()
 
+
 def gen_seed():
     # return 0
     return int(time.time())
+
 
 random.seed(gen_seed())
 np.random.seed(gen_seed())
 torch.manual_seed(gen_seed())
 
+
 def make_env(env_id, render: bool = False):
     return gym.make(env_id, render_mode='human' if (args.render or render) else 'rgb_array')
+
 
 def folder_run_id(folder: str):
     os.makedirs(folder, exist_ok=True)
@@ -46,13 +50,13 @@ def folder_run_id(folder: str):
 
 class Manager:
 
-    def __init__(self, code_file: str, env: gym.Env, debug=args.debug, name=''):
+    def __init__(self, code_file: str, env: gym.Env, debug=args.debug, name='', logs='logs'):
         self.code_file = code_file
         self.base_dir = os.path.dirname(code_file)
         self.filename = code_file.split('/')[-1].split('.')[0]
         self.name = name or self.filename
-        self.run_id = str(folder_run_id(os.path.join(self.base_dir, 'logs', self.name)))
-        self.logs_dir = os.path.join(self.base_dir, 'logs', self.name, self.run_id)
+        self.run_id = str(folder_run_id(os.path.join(self.base_dir, logs, self.name)))
+        self.logs_dir = os.path.join(self.base_dir, logs, self.name, self.run_id)
         self.models_dir = os.path.join(self.base_dir, 'models', self.name, self.run_id)
         self.env = env
         os.makedirs(self.logs_dir, exist_ok=True)
@@ -148,15 +152,15 @@ class Manager:
             reward_list.append(accum_reward)
             step_count_list.append(pbar.n)
 
-        with open(os.path.join(self.logs_dir, 'result.json', 'w')) as f:
-            json.dump({
-                'rewards'       : sum(reward_list),
-                'average_reward': sum(reward_list) / len(reward_list),
-                'steps'         : sum(step_count_list),
-                'average_step'  : sum(step_count_list) / len(step_count_list),
-                'terminated'    : sum(terminated_list),
-                'truncated'     : sum(truncated_list)
-            }, f, ensure_ascii=False, indent=4)
+        # with open(os.path.join(self.logs_dir, 'result.json', 'w')) as f:
+        #     json.dump({
+        #         'rewards'       : sum(reward_list),
+        #         'average_reward': sum(reward_list) / len(reward_list),
+        #         'steps'         : sum(step_count_list),
+        #         'average_step'  : sum(step_count_list) / len(step_count_list),
+        #         'terminated'    : sum(terminated_list),
+        #         'truncated'     : sum(truncated_list)
+        #     }, f, ensure_ascii=False, indent=4)
 
         return reward_list, step_count_list, terminated_list, truncated_list
 
@@ -209,4 +213,4 @@ class Manager:
                 # 记录节点成功率
                 self.logger.record(f'{node.name}/success_rate', success_rate)
                 self.logger.record_mean_last_n_episodes(f'{node.name}/success_rate', f'{node.name}/success_rate_20_avg',
-                                                        n=20)
+                                                        n=50)

@@ -13,7 +13,7 @@
             tensorboard_log="{{logs_dir}}/{{name}}"
             log_interval="1"
             verbose="0"
-            exp_fill="true"
+            exp_fill="false"
             train="{{train}}"
             obs_status_count="false"
             obs_children_status_count="true"
