@@ -11,6 +11,7 @@ class Ploter():
     def __init__(self) -> None:
         self.x_start = None
         self.x_end = None
+        self.smooth_len = None
         self.min_data_len = -1
 
     def reset(self):
@@ -23,10 +24,21 @@ class Ploter():
         self.x_start = x_start
         self.x_end = x_end
 
+    def set_smooth_len(self, smooth_len):
+        self.smooth_len = smooth_len
+        self.x_start = smooth_len
+
+    def smooth(self, data):
+        smoothed_data = data.rolling(window=self.smooth_len, min_periods=1).mean()
+        return smoothed_data
+    
     def plot_csv(self, filepath:str):
         data = pd.read_csv(filepath)
         steps = data['Step']
         values = data['Value']
+        if self.smooth_len is not None:
+            values = self.smooth(values)
+
         filename = os.path.basename(filepath)
         label = filename.split('.')[0]
         self.min_data_len = min(self.min_data_len, len(steps)) if self.min_data_len != -1 else len(steps)
@@ -64,10 +76,11 @@ class Ploter():
 
 pt = Ploter()
 pt.set_cut_range(20,None)
+pt.set_smooth_len(None)
 folder_path = "data\高级节点数"
 items = os.listdir(folder_path)
 for item in items:
     item_path = os.path.join(folder_path, item)
     if os.path.isdir(item_path):
         pt.plot_csv_from_dir(item_path,show=True,x_cut=True)
-
+# pt.plot_csv_from_dir(folder_path)
