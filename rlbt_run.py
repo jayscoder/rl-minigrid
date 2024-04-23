@@ -21,14 +21,13 @@ ENVS = {
     'RDK16': 'MiniGrid-RandomGoalDoorKeyEnv-16x16-v0',  # 随机目标
 }
 
-ENV_NO = 'DK8'
-TREE_GROUP = '高级节点数量'
+ENV_NO = 'DK16'
+TREE_GROUP = '状态观测'
 # TREE_NAMES = [f'G2-T{i}' for i in range(8)]  # 树名
 TREE_NAMES = os.listdir(os.path.join('scripts', TREE_GROUP))  # 树名
 LOGS = 'logs'
 
 builder = BTBuilder()
-
 
 def run(tree_name: str):
     env = make_env(ENVS[ENV_NO], render=False)

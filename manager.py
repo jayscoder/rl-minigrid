@@ -79,6 +79,7 @@ class Manager:
     def run_policy(self, policy: BTPolicy, train: bool = False, track: bool = False, episodes: int = 100):
         """运行一个行为树策略"""
         train = train or args.train
+
         policy.tree.context.update({
             'models_dir': self.models_dir,
             'logs_dir'  : self.logs_dir,
@@ -89,6 +90,9 @@ class Manager:
         })
         policy.tree.setup()
         policy.reset()
+        with open(os.path.join(self.logs_dir, 'policy.xml'), 'w') as f:
+            from pybts.utility import bt_to_xml
+            f.write(bt_to_xml(policy.tree.root))
         self.evaluate_policy(policy, episodes=episodes, track=track or args.track, train=train)
 
     def evaluate_policy(self, policy: BTPolicy, episodes: int, track: bool, train: bool):

@@ -46,7 +46,7 @@ class RLNode(BaseBTNode, RLBaseNode, ABC):
     @property
     def path(self) -> str:
         """是否开启经验填充"""
-        return self.converter.str(self.attrs.get('path'))
+        return self.converter.str(self.attrs.get('path', ''))
 
     @property
     def exp_fill(self) -> bool:
